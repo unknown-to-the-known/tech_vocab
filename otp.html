@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Revisewell Vocab - Verify OTP</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        
+        .animate-fade-in {
+            animation: fadeIn 0.5s ease-out;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        /* OTP Input Styles */
+        .otp-input {
+            width: 50px;
+            height: 60px;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            text-align: center;
+            font-size: 24px;
+            font-weight: 600;
+            transition: all 0.2s;
+            background-color: white;
+        }
+        
+        .otp-input:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+            outline: none;
+        }
+        
+        .otp-input.filled {
+            border-color: #3b82f6 !important;
+            border-width: 2px !important;
+            background-color: #f8fafc;
+        }
+        
+        /* Shake animation for OTP inputs */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-2px); }
+            20%, 40%, 60%, 80% { transform: translateX(2px); }
+        }
+        
+        .shake {
+            animation: shake 0.5s ease-in-out;
+        }
+        
+        /* Disabled state for resend OTP */
+        .resend-otp-btn.disabled {
+            color: #9ca3af !important;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+        
+        .resend-otp-btn.disabled:hover {
+            color: #9ca3af !important;
+        }
+        
+        /* Enabled state for resend OTP */
+        .resend-otp-btn.enabled {
+            color: #000000 !important;
+            cursor: pointer;
+        }
+        
+        .resend-otp-btn.enabled:hover {
+            color: #000000 !important;
+        }
+        
+        /* Change number button styles */
+        .change-number-btn {
+            border-color: #3b82f6 !important;
+            color: #3b82f6 !important;
+        }
+        
+        .change-number-btn:hover {
+            background-color: #eff6ff !important;
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-white flex items-center justify-center p-4">
+
+    <!-- OTP Screen -->
+    <div id="otp-screen" class="w-full max-w-md relative z-10 animate-fade-in">
+        <!-- Logo and Title -->
+        <div class="text-center mb-5">
+            <div class="inline-flex items-center justify-center mb-4">
+                <img src="images/revisewell_logo.png" alt="Revisewell Vocab" class="w-24 h-24">
+            </div>
+            <h1 class="text-4xl font-bold text-gray-900">
+                Revisewell <span class="text-orange-500">Vocab</span>
+            </h1>
+            <p class="text-gray-600 text-base mt-1">Your learning journey continues here</p>
+        </div>
+
+        <!-- OTP Verification Content -->
+        <div class="space-y-6">
+            <div class="text-center">
+                <h2 class="text-3xl font-bold text-gray-900 mb-1">
+                    <span class="text-green-500">Verify OTP</span>
+                </h2>
+                <p class="phone-display text-gray-600" id="phone-display">
+                    Enter the code sent to +91 
+                </p>
+            </div>
+
+            <div class="space-y-3">
+                <label class="text-sm font-medium text-gray-700 text-center block">Verification Code</label>
+                <div class="otp-container flex justify-center gap-2">
+                    <input type="text" maxlength="1" class="otp-input" data-index="0" autofocus>
+                    <input type="text" maxlength="1" class="otp-input" data-index="1">
+                    <input type="text" maxlength="1" class="otp-input" data-index="2">
+                    <input type="text" maxlength="1" class="otp-input" data-index="3">
+                    <input type="text" maxlength="1" class="otp-input" data-index="4">
+                    <input type="text" maxlength="1" class="otp-input" data-index="5">
+                </div>
+            </div>
+
+            <a href="login.html" class="change-number-btn w-full bg-white border-2 border-blue-500 text-blue-500 py-4 rounded-2xl font-semibold hover:bg-blue-50 hover:shadow-xl transition-all flex items-center justify-center gap-2 shadow-lg">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+                Change mobile number
+            </a>
+
+            <button class="resend-otp-btn disabled w-full text-gray-400 text-sm transition-colors font-medium">
+                Resend OTP in <span id="countdown-timer">15</span>s
+            </button>
+        </div>
+    </div>
+
+    <script>
+        $(function() {
+            let countdownTimer = null;
+            let countdownSeconds = 15;
+            
+            // Format phone number for display
+            function formatPhone(val) {
+                return val.length <= 5 ? val : val.slice(0, 5) + ' ' + val.slice(5);
+            }
+            
+            // Get phone number from sessionStorage
+            const phoneNumber = sessionStorage.getItem('phoneNumber') || '';
+            if (phoneNumber) {
+                $('#phone-display').text('Enter the code sent to +91 ' + formatPhone(phoneNumber));
+            }
+            
+            // Reset OTP
+            function resetOTP() {
+                $('.otp-input').val('').removeClass('filled');
+                $('.otp-container').addClass('shake');
+                setTimeout(() => $('.otp-container').removeClass('shake'), 500);
+                $('.otp-input[data-index="0"]').focus();
+            }
+            
+            // Start countdown
+            function startCountdown() {
+                if (countdownTimer) clearInterval(countdownTimer);
+                
+                countdownSeconds = 15;
+                updateResendButton(false);
+                
+                $('#countdown-timer').text(countdownSeconds);
+                
+                countdownTimer = setInterval(function() {
+                    countdownSeconds--;
+                    $('#countdown-timer').text(countdownSeconds);
+                    
+                    if (countdownSeconds <= 0) {
+                        clearInterval(countdownTimer);
+                        countdownTimer = null;
+                        updateResendButton(true);
+                    }
+                }, 1000);
+            }
+            
+            // Update resend button
+            function updateResendButton(enabled) {
+                let $btn = $('.resend-otp-btn');
+                
+                if (enabled) {
+                    $btn.removeClass('disabled').addClass('enabled').prop('disabled', false).html('Resend OTP');
+                } else {
+                    $btn.removeClass('enabled').addClass('disabled').prop('disabled', true).html('Resend OTP in <span id="countdown-timer">' + countdownSeconds + '</span>s');
+                }
+            }
+            
+            // Check OTP and redirect
+            function checkOTP() {
+                let otpComplete = true;
+                $('.otp-input').each(function() {
+                    if ($(this).val() === '') {
+                        otpComplete = false;
+                    }
+                });
+                
+                if (otpComplete) {
+                    setTimeout(() => {
+                        window.location.href = 'dashboard.html';
+                    }, 300);
+                }
+            }
+            
+            // OTP input
+            $('.otp-input').on('input', function() {
+                let val = $(this).val().replace(/\D/g, '').slice(0, 1);
+                let idx = $(this).data('index');
+                
+                $(this).val(val).toggleClass('filled', val !== '');
+                
+                if (val && idx < 5) {
+                    $('.otp-input[data-index="' + (idx + 1) + '"]').focus();
+                }
+                
+                checkOTP();
+            });
+            
+            // OTP keyboard
+            $('.otp-input').on('keydown', function(e) {
+                let idx = $(this).data('index');
+                
+                if (e.key === 'Backspace' || e.key === 'Delete') {
+                    $(this).val('').removeClass('filled');
+                    if (idx > 0) $('.otp-input[data-index="' + (idx - 1) + '"]').focus();
+                }
+                
+                if (e.key === 'ArrowRight' && idx < 5) {
+                    $('.otp-input[data-index="' + (idx + 1) + '"]').focus();
+                } else if (e.key === 'ArrowLeft' && idx > 0) {
+                    $('.otp-input[data-index="' + (idx - 1) + '"]').focus();
+                }
+            });
+            
+            // OTP paste
+            $('.otp-input[data-index="0"]').on('paste', function(e) {
+                e.preventDefault();
+                let paste = e.originalEvent.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
+                
+                if (paste.length === 6) {
+                    for (let i = 0; i < 6; i++) {
+                        $('.otp-input[data-index="' + i + '"]').val(paste[i]).addClass('filled');
+                    }
+                    checkOTP();
+                }
+            });
+            
+            // Resend OTP
+            $('.resend-otp-btn').click(function(e) {
+                e.preventDefault();
+                
+                if ($(this).hasClass('enabled')) {
+                    resetOTP();
+                    startCountdown();
+                }
+            });
+            
+            // Start countdown when page loads
+            startCountdown();
+            
+            // Clean up
+            $(window).on('beforeunload', function() {
+                if (countdownTimer) clearInterval(countdownTimer);
+            });
+        });
+    </script>
+</body>
+</html>
