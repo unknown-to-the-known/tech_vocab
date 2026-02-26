@@ -557,7 +557,7 @@
             </div>
 
             <div class="flex items-center gap-3">
-                <span class="status-badge" id="statusBadge">Initializing Service Worker...</span>
+                <span class="status-badge" id="statusBadge">Initializing...</span>
                 
                 <button class="js-logout-btn border border-blue-600 text-blue-600 px-3 py-1.5 rounded-lg text-sm 
                              flex items-center gap-2 hover:bg-blue-50 transition-colors bg-transparent">
@@ -615,7 +615,7 @@
             </div>
             <button id="dynamicBtn" class="action-btn upload-btn" disabled>
                 <i data-lucide="loader" class="w-4 h-4 animate-spin"></i>
-                Activating Service Worker...
+                Loading...
             </button>
         </div>
 
@@ -631,7 +631,7 @@
             </div>
             <button id="mobileDynamicBtn" class="action-btn upload-btn" disabled>
                 <i data-lucide="loader" class="w-4 h-4 animate-spin"></i>
-                Activating Service Worker...
+                Loading...
             </button>
         </div>
         <div class="js-mobile-camera-placeholder camera-placeholder">
@@ -647,58 +647,6 @@
             .mobile-only { display: none !important; }
         }
     </style>
-
-    <!-- Service Worker Script -->
-    <script>
-        // Register Service Worker to add COOP/COEP headers
-        if ('serviceWorker' in navigator) {
-            // Create service worker code as a blob
-            const swCode = `
-                self.addEventListener('fetch', (event) => {
-                    event.respondWith(
-                        fetch(event.request).then((response) => {
-                            const newHeaders = new Headers(response.headers);
-                            newHeaders.set('Cross-Origin-Opener-Policy', 'same-origin');
-                            newHeaders.set('Cross-Origin-Embedder-Policy', 'require-corp');
-                            
-                            return new Response(response.body, {
-                                status: response.status,
-                                statusText: response.statusText,
-                                headers: newHeaders
-                            });
-                        })
-                    );
-                });
-            `;
-            
-            const swBlob = new Blob([swCode], { type: 'application/javascript' });
-            const swUrl = URL.createObjectURL(swBlob);
-            
-            navigator.serviceWorker.register(swUrl)
-                .then(registration => {
-                    console.log('Service Worker registered with COOP/COEP headers');
-                    // Wait for activation and reload
-                    if (navigator.serviceWorker.controller) {
-                        console.log('Service Worker already active');
-                        setTimeout(() => {
-                            window.location.reload();
-                        }, 1000);
-                    } else {
-                        navigator.serviceWorker.addEventListener('controllerchange', () => {
-                            console.log('Service Worker activated, reloading...');
-                            window.location.reload();
-                        });
-                    }
-                })
-                .catch(error => {
-                    console.error('Service Worker registration failed:', error);
-                    $('#statusBadge').text('Service Worker Failed').addClass('error');
-                });
-        } else {
-            console.warn('Service Workers not supported');
-            $('#statusBadge').text('Service Worker Not Supported').addClass('error');
-        }
-    </script>
 
     <script>
         $(function() {
@@ -718,48 +666,87 @@
                 return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
             }
             
-            // Check if server has correct headers (now should be true after service worker)
-            function checkCrossOriginIsolation() {
-                if (window.crossOriginIsolated) {
-                    $('#statusBadge').text('✓ Cross-Origin Isolated').addClass('ready');
-                    return true;
+            // Register Service Worker
+            async function registerServiceWorker() {
+                if ('serviceWorker' in navigator) {
+                    try {
+                        $('#statusBadge').text('Registering Service Worker...');
+                        
+                        // Unregister any existing service workers first
+                        const registrations = await navigator.serviceWorker.getRegistrations();
+                        for (let registration of registrations) {
+                            await registration.unregister();
+                        }
+                        
+                        // Register new service worker
+                        const registration = await navigator.serviceWorker.register('sw.js', {
+                            scope: '/'
+                        });
+                        
+                        console.log('Service Worker registered:', registration);
+                        
+                        // Wait for activation
+                        if (registration.active) {
+                            $('#statusBadge').text('Service Worker Active');
+                            return true;
+                        } else {
+                            // Wait for activation
+                            return new Promise((resolve) => {
+                                registration.addEventListener('updatefound', () => {
+                                    const worker = registration.installing;
+                                    worker.addEventListener('statechange', () => {
+                                        if (worker.state === 'activated') {
+                                            $('#statusBadge').text('Service Worker Active');
+                                            resolve(true);
+                                        }
+                                    });
+                                });
+                            });
+                        }
+                    } catch (error) {
+                        console.error('Service Worker registration failed:', error);
+                        $('#statusBadge').text('Service Worker Failed').addClass('error');
+                        return false;
+                    }
                 } else {
-                    $('#statusBadge').text('✗ Not Isolated - Retrying...').addClass('error');
+                    $('#statusBadge').text('Service Worker Not Supported').addClass('error');
                     return false;
                 }
             }
             
-            // Initialize FFmpeg v0.12.6
+            // Check cross-origin isolation
+            function waitForIsolation() {
+                return new Promise((resolve) => {
+                    let attempts = 0;
+                    const check = () => {
+                        if (window.crossOriginIsolated) {
+                            $('#statusBadge').text('✓ Cross-Origin Isolated').addClass('ready');
+                            resolve(true);
+                        } else if (attempts < 20) {
+                            attempts++;
+                            setTimeout(check, 500);
+                        } else {
+                            $('#statusBadge').text('✗ Isolation Failed').addClass('error');
+                            resolve(false);
+                        }
+                    };
+                    check();
+                });
+            }
+            
+            // Initialize FFmpeg
             async function initFFmpeg() {
-                // Wait for cross-origin isolation
-                let attempts = 0;
-                while (!window.crossOriginIsolated && attempts < 10) {
-                    await new Promise(resolve => setTimeout(resolve, 1000));
-                    attempts++;
-                }
-                
-                if (!checkCrossOriginIsolation()) {
-                    $('#dynamicBtn, #mobileDynamicBtn').prop('disabled', true)
-                        .html('<i data-lucide="alert-circle" class="w-4 h-4"></i> Isolation Failed');
-                    lucide.createIcons();
-                    return;
-                }
-                
-                $('#statusBadge').text('Loading FFmpeg...').removeClass('ready error');
-                
                 try {
                     // Check if FFmpeg is loaded
                     if (typeof FFmpeg === 'undefined' || typeof FFmpeg.FFmpeg === 'undefined') {
-                        throw new Error('FFmpeg library not loaded. Check CDN links.');
+                        throw new Error('FFmpeg library not loaded');
                     }
                     
-                    console.log('Creating FFmpeg instance...');
+                    $('#statusBadge').text('Loading FFmpeg...');
                     
-                    // CORRECT API for v0.12+
                     const { FFmpeg: FFmpegClass } = FFmpeg;
                     ffmpeg = new FFmpegClass();
                     
-                    // Set up logging
                     ffmpeg.on('log', ({ message }) => {
                         console.log('FFmpeg:', message);
                     });
@@ -770,10 +757,8 @@
                         $('#compressionMessage').text(`Compressing... ${percent}%`);
                     });
                     
-                    console.log('Loading FFmpeg core...');
                     $('#statusBadge').text('Downloading core files...');
                     
-                    // Load FFmpeg with core URL
                     await ffmpeg.load({
                         coreURL: 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/umd/ffmpeg-core.js',
                     });
@@ -781,43 +766,30 @@
                     console.log('FFmpeg loaded successfully!');
                     isFFmpegReady = true;
                     
-                    // Update UI
                     $('#statusBadge').text('FFmpeg Ready').addClass('ready');
                     
-                    // Enable buttons
                     $('#dynamicBtn, #mobileDynamicBtn').prop('disabled', false)
                         .html('<i data-lucide="upload" class="w-4 h-4"></i> Upload Video');
                     lucide.createIcons();
                     
                 } catch (error) {
                     console.error('FFmpeg initialization failed:', error);
-                    
                     $('#statusBadge').text('FFmpeg Failed').addClass('error');
                     
-                    // Show error in modal
-                    $('#compressionModal').addClass('active');
-                    $('#compressionSpinner').addClass('hidden');
-                    $('#compressionError').removeClass('hidden');
-                    $('#compressionTitle').text('FFmpeg Failed to Load');
-                    $('#compressionMessage').text(error.message);
-                    $('#compressionDetails').html('Check browser console for details.');
-                    $('#compressionClose').removeClass('hidden');
-                    
                     $('#dynamicBtn, #mobileDynamicBtn').prop('disabled', true)
-                        .html('<i data-lucide="alert-circle" class="w-4 h-4"></i> Failed to Load');
+                        .html('<i data-lucide="alert-circle" class="w-4 h-4"></i> Failed');
                     lucide.createIcons();
                 }
             }
             
-            // Compress video using FFmpeg
+            // Compress video
             async function compressVideo(file) {
                 if (!isFFmpegReady || !ffmpeg) {
-                    alert('FFmpeg is not ready yet. Please wait.');
+                    alert('FFmpeg is not ready yet.');
                     return;
                 }
                 
                 try {
-                    // Show compression modal
                     $('#compressionModal').addClass('active');
                     $('#compressionSpinner').removeClass('hidden');
                     $('#compressionSuccess').addClass('hidden');
@@ -827,23 +799,18 @@
                     $('#compressionDetails').html('');
                     
                     $('#compressionTitle').text('Compressing Video...');
-                    $('#compressionMessage').text('Preparing file...');
+                    $('#compressionMessage').text('Reading file...');
                     
-                    // Read file
-                    $('#compressionMessage').text('Reading video file...');
                     const fileData = new Uint8Array(await file.arrayBuffer());
                     
-                    // Write input file to FFmpeg virtual filesystem
                     $('#compressionMessage').text('Writing to memory...');
                     await ffmpeg.writeFile('input.mp4', fileData);
                     
                     $('#compressionProgress').css('width', '20%');
-                    $('#compressionMessage').text('Compressing video (CRF 28)...');
+                    $('#compressionMessage').text('Compressing...');
                     
-                    // Get original size
                     const originalSize = file.size;
                     
-                    // Run FFmpeg compression
                     await ffmpeg.exec([
                         '-i', 'input.mp4',
                         '-c:v', 'libx264',
@@ -859,12 +826,10 @@
                     $('#compressionProgress').css('width', '80%');
                     $('#compressionMessage').text('Finalizing...');
                     
-                    // Read compressed file
                     const compressedData = await ffmpeg.readFile('output.mp4');
                     const compressedBlob = new Blob([compressedData.buffer], { type: 'video/mp4' });
                     const compressedSize = compressedBlob.size;
                     
-                    // Calculate compression ratio
                     const compressionRatio = ((originalSize - compressedSize) / originalSize * 100).toFixed(1);
                     
                     $('#compressionProgress').css('width', '100%');
@@ -879,12 +844,10 @@
                     $('#compressionSuccess').removeClass('hidden');
                     $('#compressionClose').removeClass('hidden');
                     
-                    // Create download link
                     const url = URL.createObjectURL(compressedBlob);
                     const a = document.createElement('a');
                     a.href = url;
                     
-                    // Generate filename
                     const fileName = file.name;
                     const lastDot = fileName.lastIndexOf('.');
                     const baseName = fileName.substring(0, lastDot);
@@ -894,27 +857,26 @@
                     a.click();
                     document.body.removeChild(a);
                     
-                    // Clean up
                     setTimeout(() => {
                         URL.revokeObjectURL(url);
                         try {
                             ffmpeg.deleteFile('input.mp4');
                             ffmpeg.deleteFile('output.mp4');
-                        } catch (e) {
-                            console.log('Cleanup error:', e);
-                        }
+                        } catch (e) {}
                     }, 100);
                     
                 } catch (error) {
                     console.error('Compression error:', error);
                     
                     $('#compressionTitle').text('Compression Failed');
-                    $('#compressionMessage').text(error.message || 'Failed to compress video');
-                    $('#compressionDetails').html('Please try a different video or refresh the page');
+                    $('#compressionMessage').text(error.message);
                     $('#compressionSpinner').addClass('hidden');
-                    $('#compressionSuccess').addClass('hidden');
                     $('#compressionError').removeClass('hidden');
                     $('#compressionClose').removeClass('hidden');
+                } finally {
+                    $('#dynamicBtn, #mobileDynamicBtn').prop('disabled', false)
+                        .html('<i data-lucide="upload" class="w-4 h-4"></i> Upload Video');
+                    lucide.createIcons();
                 }
             }
             
@@ -971,7 +933,7 @@
                 window.location.href = 'dashboard.html';
             });
             
-            // Upload button click handler - Open file selector
+            // Upload button click handler
             $('#dynamicBtn, #mobileDynamicBtn').on('click', function() {
                 if (!isFFmpegReady) {
                     alert('FFmpeg is not ready yet. Please wait...');
@@ -997,8 +959,6 @@
                 
                 const file = this.files[0];
                 if (file) {
-                    console.log('File selected:', file.name, file.size);
-                    
                     if (file.size > 200 * 1024 * 1024) {
                         alert('File too large. Please select a video under 200MB.');
                         $('#videoFileInput').val('');
@@ -1024,25 +984,21 @@
             
             dropArea.addEventListener('dragover', (e) => {
                 e.preventDefault();
-                e.stopPropagation();
                 dropArea.classList.add('dragover');
             });
             
-            dropArea.addEventListener('dragleave', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
+            dropArea.addEventListener('dragleave', () => {
                 dropArea.classList.remove('dragover');
             });
             
             dropArea.addEventListener('drop', (e) => {
                 e.preventDefault();
-                e.stopPropagation();
                 dropArea.classList.remove('dragover');
                 
                 const file = e.dataTransfer.files[0];
                 if (file && file.type.startsWith('video/')) {
                     if (file.size > 200 * 1024 * 1024) {
-                        alert('File too large. Please select a video under 200MB.');
+                        alert('File too large.');
                         return;
                     }
                     
@@ -1052,7 +1008,6 @@
                     $('#selectedFileInfo').removeClass('hidden');
                     $('#confirmFileSelect').prop('disabled', false);
                     
-                    // Also set the file input value
                     const dataTransfer = new DataTransfer();
                     dataTransfer.items.add(file);
                     $('#videoFileInput')[0].files = dataTransfer.files;
@@ -1068,24 +1023,21 @@
                 selectedFile = null;
             });
             
-            // Confirm file selection and start compression
+            // Confirm file selection
             $('#confirmFileSelect').on('click', async function() {
                 if (!selectedFile) return;
                 
                 $('#fileInputModal').removeClass('active');
                 
-                // Disable upload buttons
                 $('#dynamicBtn, #mobileDynamicBtn').prop('disabled', true).html('<i data-lucide="loader" class="w-4 h-4 animate-spin"></i> Compressing...');
                 $('.js-camera-placeholder, .js-mobile-camera-placeholder').css('border', '2px solid #3b82f6');
                 lucide.createIcons();
                 
-                // Start compression
                 await compressVideo(selectedFile);
                 
                 $('#videoFileInput').val('');
                 selectedFile = null;
                 
-                // Re-enable buttons
                 $('#dynamicBtn, #mobileDynamicBtn').prop('disabled', false).html('<i data-lucide="upload" class="w-4 h-4"></i> Upload Video');
                 $('.js-camera-placeholder, .js-mobile-camera-placeholder').css('border', '2px solid white');
                 lucide.createIcons();
@@ -1109,12 +1061,17 @@
             initWebcam();
             attachPlayButtonEvent();
             
-            // Initialize FFmpeg after service worker
-            setTimeout(() => {
-                initFFmpeg();
-            }, 2000);
+            // Main initialization sequence
+            (async function() {
+                const swRegistered = await registerServiceWorker();
+                if (swRegistered) {
+                    const isolated = await waitForIsolation();
+                    if (isolated) {
+                        await initFFmpeg();
+                    }
+                }
+            })();
             
-            // Clean up
             $(window).on('beforeunload', function() { 
                 if (mediaStream) {
                     mediaStream.getTracks().forEach(track => track.stop());
