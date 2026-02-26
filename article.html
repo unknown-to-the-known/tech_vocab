@@ -9,11 +9,14 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
-    <!-- FFmpeg.wasm -->
-    <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.12.6/dist/ffmpeg.min.js"></script>
     
-    <!-- Custom Styles -->
+    <!-- FFmpeg.wasm v0.12.6 - CORRECT IMPORTS -->
+    <script src="https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.6/dist/umd/ffmpeg.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.1/dist/umd/index.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/umd/ffmpeg-core.js"></script>
+    
     <style>
+        /* Your existing styles - keep them exactly as before */
         .scrollbar-hide::-webkit-scrollbar { display: none; }
         .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
         
@@ -440,6 +443,25 @@
             background-color: #f9fafb;
             border-radius: 0.5rem;
         }
+
+        .status-badge {
+            font-size: 0.8rem;
+            padding: 0.25rem 0.75rem;
+            border-radius: 1rem;
+            margin-left: 1rem;
+            background-color: #fef3c7;
+            color: #92400e;
+        }
+        
+        .status-badge.ready {
+            background-color: #d1fae5;
+            color: #065f46;
+        }
+        
+        .status-badge.error {
+            background-color: #fee2e2;
+            color: #991b1b;
+        }
     </style>
 </head>
 <body class="bg-gray-50 min-h-screen overflow-x-hidden">
@@ -534,11 +556,15 @@
                 </div>
             </div>
 
-            <button class="js-logout-btn border border-blue-600 text-blue-600 px-3 py-1.5 rounded-lg text-sm 
-                         flex items-center gap-2 hover:bg-blue-50 transition-colors bg-transparent">
-                <i data-lucide="log-out" class="w-4 h-4"></i>
-                Logout
-            </button>
+            <div class="flex items-center gap-3">
+                <span class="status-badge" id="statusBadge">Checking Cross-Origin Isolation...</span>
+                
+                <button class="js-logout-btn border border-blue-600 text-blue-600 px-3 py-1.5 rounded-lg text-sm 
+                             flex items-center gap-2 hover:bg-blue-50 transition-colors bg-transparent">
+                    <i data-lucide="log-out" class="w-4 h-4"></i>
+                    Logout
+                </button>
+            </div>
         </div>
     </header>
 
@@ -587,9 +613,9 @@
             <div class="help-icon" id="helpIcon">
                 <i data-lucide="help-circle" class="w-6 h-6"></i>
             </div>
-            <button id="dynamicBtn" class="action-btn upload-btn">
-                <i data-lucide="upload" class="w-4 h-4"></i>
-                Upload Video
+            <button id="dynamicBtn" class="action-btn upload-btn" disabled>
+                <i data-lucide="loader" class="w-4 h-4 animate-spin"></i>
+                Checking Server Headers...
             </button>
         </div>
 
@@ -603,9 +629,9 @@
             <div class="help-icon" id="mobileHelpIcon">
                 <i data-lucide="help-circle" class="w-6 h-6"></i>
             </div>
-            <button id="mobileDynamicBtn" class="action-btn upload-btn">
-                <i data-lucide="upload" class="w-4 h-4"></i>
-                Upload Video
+            <button id="mobileDynamicBtn" class="action-btn upload-btn" disabled>
+                <i data-lucide="loader" class="w-4 h-4 animate-spin"></i>
+                Checking Server Headers...
             </button>
         </div>
         <div class="js-mobile-camera-placeholder camera-placeholder">
@@ -629,6 +655,7 @@
             let mediaStream = null;
             let ffmpeg = null;
             let selectedFile = null;
+            let isFFmpegReady = false;
             
             // Format file size
             function formatFileSize(bytes) {
@@ -639,45 +666,111 @@
                 return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
             }
             
-            // Helper function to read file as Uint8Array
-            function readFileAsUint8Array(file) {
-                return new Promise((resolve, reject) => {
-                    const reader = new FileReader();
-                    reader.onload = () => resolve(new Uint8Array(reader.result));
-                    reader.onerror = reject;
-                    reader.readAsArrayBuffer(file);
-                });
+            // Check if server has correct headers
+            function checkCrossOriginIsolation() {
+                if (window.crossOriginIsolated) {
+                    $('#statusBadge').text('✓ Cross-Origin Isolated').addClass('ready');
+                    return true;
+                } else {
+                    $('#statusBadge').text('✗ Missing Headers').addClass('error');
+                    $('#dynamicBtn, #mobileDynamicBtn').prop('disabled', true)
+                        .html('<i data-lucide="alert-circle" class="w-4 h-4"></i> Server Headers Missing');
+                    lucide.createIcons();
+                    
+                    // Show detailed error
+                    $('#compressionModal').addClass('active');
+                    $('#compressionSpinner').addClass('hidden');
+                    $('#compressionError').removeClass('hidden');
+                    $('#compressionTitle').text('Server Configuration Required');
+                    $('#compressionMessage').text('FFmpeg.wasm v0.12+ requires special headers');
+                    $('#compressionDetails').html(
+                        'Your server needs these headers:<br>' +
+                        '<code class="text-xs block mt-2 p-2 bg-gray-100 rounded">Cross-Origin-Opener-Policy: same-origin<br>Cross-Origin-Embedder-Policy: require-corp</code><br>' +
+                        'Contact your server administrator to add them.'
+                    );
+                    $('#compressionClose').removeClass('hidden');
+                    
+                    return false;
+                }
             }
             
-            // Initialize FFmpeg
+            // Initialize FFmpeg v0.12.6 - CORRECT API
             async function initFFmpeg() {
-                if (ffmpeg && ffmpeg.isLoaded()) {
-                    return ffmpeg;
+                if (!checkCrossOriginIsolation()) {
+                    return;
                 }
                 
+                $('#statusBadge').text('Loading FFmpeg...').removeClass('ready error');
+                
                 try {
-                    const { createFFmpeg } = FFmpeg;
-                    ffmpeg = createFFmpeg({ 
-                        log: false,
-                        corePath: 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/ffmpeg-core.js',
-                        progress: ({ ratio }) => {
-                            const progress = Math.round(ratio * 100);
-                            $('#compressionProgress').css('width', progress + '%');
-                            $('#compressionMessage').text(`Compressing... ${progress}%`);
-                        }
+                    // Check if FFmpeg is loaded
+                    if (typeof FFmpeg === 'undefined' || typeof FFmpeg.FFmpeg === 'undefined') {
+                        throw new Error('FFmpeg library not loaded. Check CDN links.');
+                    }
+                    
+                    console.log('Creating FFmpeg instance...');
+                    
+                    // CORRECT API for v0.12+ - use FFmpeg.FFmpeg class
+                    const { FFmpeg: FFmpegClass } = FFmpeg;
+                    ffmpeg = new FFmpegClass();
+                    
+                    // Set up logging
+                    ffmpeg.on('log', ({ message }) => {
+                        console.log('FFmpeg:', message);
                     });
                     
-                    await ffmpeg.load();
-                    console.log('FFmpeg loaded successfully');
-                    return ffmpeg;
+                    ffmpeg.on('progress', ({ progress }) => {
+                        const percent = Math.round(progress * 100);
+                        $('#compressionProgress').css('width', percent + '%');
+                        $('#compressionMessage').text(`Compressing... ${percent}%`);
+                    });
+                    
+                    console.log('Loading FFmpeg core...');
+                    $('#statusBadge').text('Downloading core files...');
+                    
+                    // Load FFmpeg with core URL
+                    await ffmpeg.load({
+                        coreURL: 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/umd/ffmpeg-core.js',
+                    });
+                    
+                    console.log('FFmpeg loaded successfully!');
+                    isFFmpegReady = true;
+                    
+                    // Update UI
+                    $('#statusBadge').text('FFmpeg Ready').addClass('ready');
+                    
+                    // Enable buttons
+                    $('#dynamicBtn, #mobileDynamicBtn').prop('disabled', false)
+                        .html('<i data-lucide="upload" class="w-4 h-4"></i> Upload Video');
+                    lucide.createIcons();
+                    
                 } catch (error) {
-                    console.error('Error loading FFmpeg:', error);
-                    throw new Error('Failed to load FFmpeg. Please refresh the page.');
+                    console.error('FFmpeg initialization failed:', error);
+                    
+                    $('#statusBadge').text('FFmpeg Failed').addClass('error');
+                    
+                    // Show error in modal
+                    $('#compressionModal').addClass('active');
+                    $('#compressionSpinner').addClass('hidden');
+                    $('#compressionError').removeClass('hidden');
+                    $('#compressionTitle').text('FFmpeg Failed to Load');
+                    $('#compressionMessage').text(error.message);
+                    $('#compressionDetails').html('Check browser console for details.');
+                    $('#compressionClose').removeClass('hidden');
+                    
+                    $('#dynamicBtn, #mobileDynamicBtn').prop('disabled', true)
+                        .html('<i data-lucide="alert-circle" class="w-4 h-4"></i> Failed to Load');
+                    lucide.createIcons();
                 }
             }
             
-            // Compress video using FFmpeg.wasm
+            // Compress video using FFmpeg
             async function compressVideo(file) {
+                if (!isFFmpegReady || !ffmpeg) {
+                    alert('FFmpeg is not ready yet. Please wait.');
+                    return;
+                }
+                
                 try {
                     // Show compression modal
                     $('#compressionModal').addClass('active');
@@ -688,45 +781,41 @@
                     $('#compressionProgress').css('width', '0%');
                     $('#compressionDetails').html('');
                     
-                    $('#compressionTitle').text('Loading FFmpeg...');
-                    $('#compressionMessage').text('Initializing video compressor...');
-                    
-                    // Initialize FFmpeg
-                    const ffmpeg = await initFFmpeg();
-                    
-                    $('#compressionProgress').css('width', '20%');
                     $('#compressionTitle').text('Compressing Video...');
-                    $('#compressionMessage').text('Reading video file...');
+                    $('#compressionMessage').text('Preparing file...');
                     
                     // Read file
-                    const fileData = await readFileAsUint8Array(file);
+                    $('#compressionMessage').text('Reading video file...');
+                    const fileData = new Uint8Array(await file.arrayBuffer());
                     
                     // Write input file to FFmpeg virtual filesystem
-                    ffmpeg.FS('writeFile', 'input.mp4', fileData);
+                    $('#compressionMessage').text('Writing to memory...');
+                    await ffmpeg.writeFile('input.mp4', fileData);
                     
-                    $('#compressionProgress').css('width', '40%');
-                    $('#compressionMessage').text('Compressing video...');
+                    $('#compressionProgress').css('width', '20%');
+                    $('#compressionMessage').text('Compressing video (CRF 28)...');
                     
                     // Get original size
                     const originalSize = file.size;
                     
                     // Run FFmpeg compression
-                    await ffmpeg.run(
+                    await ffmpeg.exec([
                         '-i', 'input.mp4',
-                        '-vcodec', 'libx264',
+                        '-c:v', 'libx264',
                         '-crf', '28',
                         '-preset', 'fast',
-                        '-acodec', 'aac',
+                        '-c:a', 'aac',
                         '-b:a', '128k',
                         '-movflags', '+faststart',
+                        '-y',
                         'output.mp4'
-                    );
+                    ]);
                     
                     $('#compressionProgress').css('width', '80%');
                     $('#compressionMessage').text('Finalizing...');
                     
                     // Read compressed file
-                    const compressedData = ffmpeg.FS('readFile', 'output.mp4');
+                    const compressedData = await ffmpeg.readFile('output.mp4');
                     const compressedBlob = new Blob([compressedData.buffer], { type: 'video/mp4' });
                     const compressedSize = compressedBlob.size;
                     
@@ -764,17 +853,12 @@
                     setTimeout(() => {
                         URL.revokeObjectURL(url);
                         try {
-                            ffmpeg.FS('unlink', 'input.mp4');
-                            ffmpeg.FS('unlink', 'output.mp4');
+                            ffmpeg.deleteFile('input.mp4');
+                            ffmpeg.deleteFile('output.mp4');
                         } catch (e) {
                             console.log('Cleanup error:', e);
                         }
                     }, 100);
-                    
-                    // Reset UI
-                    $('#dynamicBtn, #mobileDynamicBtn').prop('disabled', false).html('<i data-lucide="upload" class="w-4 h-4"></i> Upload Video');
-                    $('.js-camera-placeholder, .js-mobile-camera-placeholder').css('border', '2px solid white');
-                    lucide.createIcons();
                     
                 } catch (error) {
                     console.error('Compression error:', error);
@@ -786,10 +870,6 @@
                     $('#compressionSuccess').addClass('hidden');
                     $('#compressionError').removeClass('hidden');
                     $('#compressionClose').removeClass('hidden');
-                    
-                    $('#dynamicBtn, #mobileDynamicBtn').prop('disabled', false).html('<i data-lucide="upload" class="w-4 h-4"></i> Upload Video');
-                    $('.js-camera-placeholder, .js-mobile-camera-placeholder').css('border', '2px solid white');
-                    lucide.createIcons();
                 }
             }
             
@@ -848,6 +928,10 @@
             
             // Upload button click handler - Open file selector
             $('#dynamicBtn, #mobileDynamicBtn').on('click', function() {
+                if (!isFFmpegReady) {
+                    alert('FFmpeg is not ready yet. Please wait...');
+                    return;
+                }
                 $('#fileInputModal').addClass('active');
                 selectedFile = null;
                 $('#selectedFileInfo').addClass('hidden');
@@ -946,7 +1030,7 @@
                 $('#fileInputModal').removeClass('active');
                 
                 // Disable upload buttons
-                $('#dynamicBtn, #mobileDynamicBtn').prop('disabled', true).html('<i data-lucide="loader" class="w-4 h-4 animate-spin"></i> Processing...');
+                $('#dynamicBtn, #mobileDynamicBtn').prop('disabled', true).html('<i data-lucide="loader" class="w-4 h-4 animate-spin"></i> Compressing...');
                 $('.js-camera-placeholder, .js-mobile-camera-placeholder').css('border', '2px solid #3b82f6');
                 lucide.createIcons();
                 
@@ -955,6 +1039,11 @@
                 
                 $('#videoFileInput').val('');
                 selectedFile = null;
+                
+                // Re-enable buttons
+                $('#dynamicBtn, #mobileDynamicBtn').prop('disabled', false).html('<i data-lucide="upload" class="w-4 h-4"></i> Upload Video');
+                $('.js-camera-placeholder, .js-mobile-camera-placeholder').css('border', '2px solid white');
+                lucide.createIcons();
             });
             
             // Close compression modal
@@ -974,6 +1063,11 @@
             // Initialize
             initWebcam();
             attachPlayButtonEvent();
+            
+            // Check headers and initialize FFmpeg
+            setTimeout(() => {
+                initFFmpeg();
+            }, 500);
             
             // Clean up
             $(window).on('beforeunload', function() { 
