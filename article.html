@@ -10,7 +10,7 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     
-    <!-- FFmpeg.wasm v0.12.6 - CORRECT IMPORTS -->
+    <!-- FFmpeg.wasm v0.12.6 -->
     <script src="https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.6/dist/umd/ffmpeg.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.1/dist/umd/index.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/umd/ffmpeg-core.js"></script>
@@ -557,7 +557,7 @@
             </div>
 
             <div class="flex items-center gap-3">
-                <span class="status-badge" id="statusBadge">Checking Cross-Origin Isolation...</span>
+                <span class="status-badge" id="statusBadge">Initializing Service Worker...</span>
                 
                 <button class="js-logout-btn border border-blue-600 text-blue-600 px-3 py-1.5 rounded-lg text-sm 
                              flex items-center gap-2 hover:bg-blue-50 transition-colors bg-transparent">
@@ -615,7 +615,7 @@
             </div>
             <button id="dynamicBtn" class="action-btn upload-btn" disabled>
                 <i data-lucide="loader" class="w-4 h-4 animate-spin"></i>
-                Checking Server Headers...
+                Activating Service Worker...
             </button>
         </div>
 
@@ -631,7 +631,7 @@
             </div>
             <button id="mobileDynamicBtn" class="action-btn upload-btn" disabled>
                 <i data-lucide="loader" class="w-4 h-4 animate-spin"></i>
-                Checking Server Headers...
+                Activating Service Worker...
             </button>
         </div>
         <div class="js-mobile-camera-placeholder camera-placeholder">
@@ -647,6 +647,58 @@
             .mobile-only { display: none !important; }
         }
     </style>
+
+    <!-- Service Worker Script -->
+    <script>
+        // Register Service Worker to add COOP/COEP headers
+        if ('serviceWorker' in navigator) {
+            // Create service worker code as a blob
+            const swCode = `
+                self.addEventListener('fetch', (event) => {
+                    event.respondWith(
+                        fetch(event.request).then((response) => {
+                            const newHeaders = new Headers(response.headers);
+                            newHeaders.set('Cross-Origin-Opener-Policy', 'same-origin');
+                            newHeaders.set('Cross-Origin-Embedder-Policy', 'require-corp');
+                            
+                            return new Response(response.body, {
+                                status: response.status,
+                                statusText: response.statusText,
+                                headers: newHeaders
+                            });
+                        })
+                    );
+                });
+            `;
+            
+            const swBlob = new Blob([swCode], { type: 'application/javascript' });
+            const swUrl = URL.createObjectURL(swBlob);
+            
+            navigator.serviceWorker.register(swUrl)
+                .then(registration => {
+                    console.log('Service Worker registered with COOP/COEP headers');
+                    // Wait for activation and reload
+                    if (navigator.serviceWorker.controller) {
+                        console.log('Service Worker already active');
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 1000);
+                    } else {
+                        navigator.serviceWorker.addEventListener('controllerchange', () => {
+                            console.log('Service Worker activated, reloading...');
+                            window.location.reload();
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error('Service Worker registration failed:', error);
+                    $('#statusBadge').text('Service Worker Failed').addClass('error');
+                });
+        } else {
+            console.warn('Service Workers not supported');
+            $('#statusBadge').text('Service Worker Not Supported').addClass('error');
+        }
+    </script>
 
     <script>
         $(function() {
@@ -666,37 +718,30 @@
                 return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
             }
             
-            // Check if server has correct headers
+            // Check if server has correct headers (now should be true after service worker)
             function checkCrossOriginIsolation() {
                 if (window.crossOriginIsolated) {
                     $('#statusBadge').text('✓ Cross-Origin Isolated').addClass('ready');
                     return true;
                 } else {
-                    $('#statusBadge').text('✗ Missing Headers').addClass('error');
-                    $('#dynamicBtn, #mobileDynamicBtn').prop('disabled', true)
-                        .html('<i data-lucide="alert-circle" class="w-4 h-4"></i> Server Headers Missing');
-                    lucide.createIcons();
-                    
-                    // Show detailed error
-                    $('#compressionModal').addClass('active');
-                    $('#compressionSpinner').addClass('hidden');
-                    $('#compressionError').removeClass('hidden');
-                    $('#compressionTitle').text('Server Configuration Required');
-                    $('#compressionMessage').text('FFmpeg.wasm v0.12+ requires special headers');
-                    $('#compressionDetails').html(
-                        'Your server needs these headers:<br>' +
-                        '<code class="text-xs block mt-2 p-2 bg-gray-100 rounded">Cross-Origin-Opener-Policy: same-origin<br>Cross-Origin-Embedder-Policy: require-corp</code><br>' +
-                        'Contact your server administrator to add them.'
-                    );
-                    $('#compressionClose').removeClass('hidden');
-                    
+                    $('#statusBadge').text('✗ Not Isolated - Retrying...').addClass('error');
                     return false;
                 }
             }
             
-            // Initialize FFmpeg v0.12.6 - CORRECT API
+            // Initialize FFmpeg v0.12.6
             async function initFFmpeg() {
+                // Wait for cross-origin isolation
+                let attempts = 0;
+                while (!window.crossOriginIsolated && attempts < 10) {
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                    attempts++;
+                }
+                
                 if (!checkCrossOriginIsolation()) {
+                    $('#dynamicBtn, #mobileDynamicBtn').prop('disabled', true)
+                        .html('<i data-lucide="alert-circle" class="w-4 h-4"></i> Isolation Failed');
+                    lucide.createIcons();
                     return;
                 }
                 
@@ -710,7 +755,7 @@
                     
                     console.log('Creating FFmpeg instance...');
                     
-                    // CORRECT API for v0.12+ - use FFmpeg.FFmpeg class
+                    // CORRECT API for v0.12+
                     const { FFmpeg: FFmpegClass } = FFmpeg;
                     ffmpeg = new FFmpegClass();
                     
@@ -1064,10 +1109,10 @@
             initWebcam();
             attachPlayButtonEvent();
             
-            // Check headers and initialize FFmpeg
+            // Initialize FFmpeg after service worker
             setTimeout(() => {
                 initFFmpeg();
-            }, 500);
+            }, 2000);
             
             // Clean up
             $(window).on('beforeunload', function() { 
