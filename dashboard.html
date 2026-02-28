@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Revisewell Vocab Dash</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+        .scrollbar-hide {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        .line-clamp-2 {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        .calendar-popup {
+            display: none;
+            position: absolute;
+            top: 100%;
+            right: 0;
+            z-index: 50;
+            margin-top: 8px;
+        }
+        .selected-date {
+            background-color: #3b82f6 !important;
+            color: white !important;
+        }
+        .in-range {
+            background-color: #dbeafe !important;
+        }
+        .announcements-container {
+            width: 100%;
+        }
+        .announcement-card {
+            width: calc(90% - 16px);
+            max-width: 500px;
+            flex-shrink: 0;
+        }
+        
+        /* Desktop styles - 80% width with 10% gaps on each side - matching article.html */
+        @media (min-width: 1024px) {
+            .desktop-container,
+            header > div,
+            main {
+                width: 80% !important;
+                margin-left: 10% !important;
+                margin-right: 10% !important;
+                max-width: none !important;
+            }
+        }
+
+        /* Only addition: card border color - nothing else changed */
+        .article-card {
+            border-color: #3b82f6 !important; /* blue border */
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen overflow-x-hidden">
+    <!-- Header - Updated to match article.html exactly -->
+    <header class="bg-white border-b border-gray-200 px-4 py-2 sticky top-0 z-30">
+        <div class="max-w-7xl mx-auto flex items-center justify-between">
+            <!-- Left side: logo + stacked text (Revisewell above Vocab) - matching article.html -->
+            <div class="flex items-center gap-1">
+                <!-- Logo -->
+                <div class="inline-flex items-center justify-center cursor-pointer" id="logoClick">
+                    <img src="images/revisewell_logo.png" alt="Revisewell Vocab" class="w-8 h-8">
+                </div>
+                <!-- Stacked text: Revisewell above Vocab in orange -->
+                <div class="flex flex-col leading-tight">
+                    <span class="font-bold text-lg text-gray-900 mt-2">Revisewell</span>
+                    <span class="font-bold text-xs text-orange-500 -mt-1 pl-10">Vocab</span>
+                </div>
+            </div>
+
+            <!-- Logout button matching article.html exactly -->
+            <button class="js-logout-btn border border-blue-600 text-blue-600 px-3 py-1.5 rounded-lg text-sm 
+                         flex items-center gap-2 hover:bg-blue-50 transition-colors bg-transparent">
+                <i data-lucide="log-out" class="w-4 h-4"></i>
+                Logout
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-3 py-3 w-full overflow-x-hidden">
+        <!-- User Greeting and Grade -->
+        <div class="flex items-center justify-between mb-6">
+            <h1 class="text-2xl text-gray-900 font-bold">Hi, William</h1>
+            <h2 class="text-2xl text-gray-900 font-bold">Grade : 10</h2>
+        </div>
+
+        <!-- Announcements Section - Added Lucide icon -->
+        <section class="mb-8 w-full overflow-x-hidden">
+            <h2 class="text-xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                <i data-lucide="megaphone" class="w-6 h-6"></i>
+                Announcements
+            </h2>
+            <div class="w-full">
+                <div class="announcements-container flex gap-4 overflow-x-auto pb-4 scrollbar-hide snap-x snap-mandatory"></div>
+            </div>
+        </section>
+
+        <!-- Articles Section - Added Lucide icon -->
+        <section class="w-full">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-semibold text-gray-900 flex items-center gap-2">
+                    <i data-lucide="book-open" class="w-6 h-6"></i>
+                    Your Articles
+                </h2>
+                <div class="flex items-center gap-2 relative">
+                    <button class="calendar-btn border border-gray-300 rounded-lg px-3 py-1 text-sm flex items-center gap-1 hover:bg-gray-50">
+                        <i data-lucide="calendar" class="w-4 h-4"></i>
+                        Filter
+                    </button>
+                    
+                    <!-- Calendar Popup -->
+                    <div class="calendar-popup bg-white border border-gray-300 rounded-lg shadow-lg p-4 w-80">
+                        <!-- Year and Month Selection with Arrows -->
+                        <div class="flex gap-2 mb-3">
+                            <div class="w-1/2 flex items-center border border-gray-300 rounded-lg bg-white">
+                                <button class="year-down-btn p-2 hover:bg-gray-100 rounded-l-lg transition-colors">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                    </svg>
+                                </button>
+                                <span class="year-display flex-1 text-center text-sm font-medium">2026</span>
+                                <button class="year-up-btn p-2 hover:bg-gray-100 rounded-r-lg transition-colors">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
+                                    </svg>
+                                </button>
+                            </div>
+                            <div class="w-1/2 flex items-center border border-gray-300 rounded-lg bg-white">
+                                <button class="month-down-btn p-2 hover:bg-gray-100 rounded-l-lg transition-colors">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                    </svg>
+                                </button>
+                                <span class="month-display flex-1 text-center text-sm font-medium">February</span>
+                                <button class="month-up-btn p-2 hover:bg-gray-100 rounded-r-lg transition-colors">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Date Range Display -->
+                        <div class="mb-3 text-sm">
+                            <div class="flex gap-2">
+                                <div class="flex-1">
+                                    <div class="text-xs text-gray-500">Start Date</div>
+                                    <div class="start-date-display text-xs font-medium">Not selected</div>
+                                </div>
+                                <div class="flex-1">
+                                    <div class="text-xs text-gray-500">End Date</div>
+                                    <div class="end-date-display text-xs font-medium">Not selected</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Calendar Grid -->
+                        <div class="grid grid-cols-7 gap-1 text-center">
+                            <div class="text-xs font-medium text-gray-500 py-1">Sun</div>
+                            <div class="text-xs font-medium text-gray-500 py-1">Mon</div>
+                            <div class="text-xs font-medium text-gray-500 py-1">Tue</div>
+                            <div class="text-xs font-medium text-gray-500 py-1">Wed</div>
+                            <div class="text-xs font-medium text-gray-500 py-1">Thu</div>
+                            <div class="text-xs font-medium text-gray-500 py-1">Fri</div>
+                            <div class="text-xs font-medium text-gray-500 py-1">Sat</div>
+                            <div class="calendar-days grid grid-cols-7 gap-1 col-span-7"></div>
+                        </div>
+                        
+                        <!-- Status Selection -->
+                        <div class="status-selection mt-4 hidden">
+                            <div class="text-xs font-medium text-gray-700 mb-2">Show articles that are:</div>
+                            <div class="flex gap-2">
+                                <button class="show-finished-btn text-xs bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 w-full">Finished Only</button>
+                                <button class="show-pending-btn text-xs bg-orange-500 text-white px-3 py-1 rounded hover:bg-orange-600 w-full">Pending Only</button>
+                                <button class="show-both-btn text-xs bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 w-full">Both</button>
+                            </div>
+                        </div>
+                        
+                        <!-- Action Buttons -->
+                        <div class="mt-4 flex justify-between">
+                            <button class="clear-date text-xs text-gray-600 hover:text-gray-900 px-2 py-1">Clear</button>
+                            <div class="flex gap-2">
+                                <button class="apply-dates text-xs bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700">Apply Dates</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="articles-container grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4"></div>
+        </section>
+    </main>
+
+    <script>
+        $(function() {
+            lucide.createIcons();
+
+            // Logo click handler - redirect to dashboard.html (matching article.html)
+            $('#logoClick').on('click', function() {
+                window.location.href = 'dashboard.html';
+            });
+
+            // ---------- state ----------
+            let F = {                          // filter data
+                status: 'both',
+                start: null,                 // dd/mm/yyyy
+                end: null,
+                pickingStart: true
+            };
+
+            let curYear = 2026, curMonth = 1; // 0 = Jan
+            const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+            // ---------- data ----------
+            const articles = [
+                { id:1, title:'Introduction to Learning Strategies', image:'images/img_1.jpeg', publishedDate:'01/02/2026', maxTime:3, completed:true, completedDate:'08/02/2026', score:80 },
+                { id:2, title:'Science Experiments for Beginners', image:'images/img_1.jpeg', publishedDate:'02/02/2026', maxTime:5, completed:true, completedDate:'10/02/2026', score:92 },
+                { id:3, title:'Understanding Geometry Basics', image:'images/img_1.jpeg', publishedDate:'03/02/2026', maxTime:4, completed:false, score:45 },
+                { id:4, title:'Ancient Civilizations and Their Impact', image:'images/img_1.jpeg', publishedDate:'04/02/2026', maxTime:6, completed:true, completedDate:'09/02/2026', score:88 },
+                { id:5, title:'World Geography: Continents and Oceans', image:'images/img_1.jpeg', publishedDate:'05/02/2026', maxTime:4, completed:false, score:60 },
+                { id:6, title:'Art History: Famous Paintings', image:'images/img_1.jpeg', publishedDate:'06/02/2026', maxTime:3, completed:true, completedDate:'07/02/2026', score:95 },
+                { id:7, title:'Introduction to Musical Instruments', image:'images/img_1.jpeg', publishedDate:'07/02/2026', maxTime:5, completed:false, score:30 },
+                { id:8, title:'Basics of Computer Programming', image:'images/img_1.jpeg', publishedDate:'08/02/2026', maxTime:7, completed:true, completedDate:'11/02/2026', score:85 },
+                { id:9, title:'Classic Literature: A Journey Through Time', image:'images/img_1.jpeg', publishedDate:'09/02/2026', maxTime:4, completed:false, score:50 },
+                { id:10, title:'Plant Biology: Understanding Photosynthesis', image:'images/img_1.jpeg', publishedDate:'10/02/2026', maxTime:5, completed:true, completedDate:'06/02/2026', score:78 }
+            ];
+
+            const announcements = [
+                { id:1, title:'School Event Tomorrow!', description:'Join us for the annual science fair at 10 AM in the main hall.', image:'https://images.unsplash.com/photo-1643982102543-bc057db646cf?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxzY2hvb2wlMjBhbm5vdW5jZW1lbnQlMjBib2FyZHxlbnwxfHx8fDE3NzA3ODkwMDd8MA&ixlib=rb-4.1.0&q=80&w=1080', color:'from-blue-500 to-blue-600' },
+                { id:2, title:'Reading Challenge', description:'Complete 5 articles this week to earn a special badge!', image:'https://images.unsplash.com/photo-1758270704524-596810e891b5?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxlZHVjYXRpb24lMjBjbGFzc3Jvb20lMjBzdHVkZW50c3xlbnwxfHx8fDE3NzA2ODUxOTJ8MA&ixlib=rb-4.1.0&q=80&w=1080', color:'from-purple-500 to-purple-600' },
+                { id:3, title:'Achievement Unlocked!', description:'You\'ve completed 50% of Grade 1 articles. Keep it up!', image:'https://images.unsplash.com/photo-1578269174936-2709b6aeb913?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxhY2FkZW1pYyUyMGFjaGlldmVtZW50JTIwdHJvcGh5fGVufDF8fHx8MTc3MDc3Nzc5NXww&ixlib=rb-4.1.0&q=80&w=1080', color:'from-green-500 to-green-600' },
+                { id:4, title:'New Articles Available', description:'Check out the latest content on technology and science.', image:'https://images.unsplash.com/photo-1763735134267-87caa7ad59db?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxzY2hvb2wlMjBldmVudCUyMGNlbGVicmF0aW9ufGVufDF8fHx8MTc3MDcwMzc5NXww&ixlib=rb-4.1.0&q=80&w=1080', color:'from-orange-500 to-orange-600' },
+                { id:5, title:'Weekly Progress Report', description:'You\'ve made great progress this week! Check your achievements.', image:'https://images.unsplash.com/photo-1643982102543-bc057db646cf?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxzY2hvb2wlMjBhbm5vdW5jZW1lbnQlMjBib2FyZHxlbnwxfHx8fDE3NzA3ODkwMDd8MA&ixlib=rb-4.1.0&q=80&w=1080', color:'from-pink-500 to-pink-600' }
+            ];
+
+            // ---------- helpers ----------
+            const toDate = (str) => str ? new Date(str.split('/')[2], str.split('/')[1]-1, str.split('/')[0]) : null;
+
+            const inRange = (dateStr) => {
+                if (!F.start && !F.end) return true;
+                let d = toDate(dateStr), s = toDate(F.start), e = toDate(F.end);
+                if (s && e) return d >= s && d <= e;
+                if (s) return d >= s;
+                if (e) return d <= e;
+                return true;
+            };
+
+            // ---------- render ----------
+            const renderCalendar = () => {
+                let first = new Date(curYear, curMonth, 1), last = new Date(curYear, curMonth+1, 0);
+                let days = '', startDay = first.getDay();
+                for (let i=0; i<startDay; i++) days += '<div class="py-1"></div>';
+                for (let d=1; d<=last.getDate(); d++) {
+                    let ds = `${d.toString().padStart(2,'0')}/${(curMonth+1).toString().padStart(2,'0')}/${curYear}`;
+                    let cls = 'day-btn py-1 text-xs hover:bg-gray-100 rounded cursor-pointer';
+                    if (F.start === ds || F.end === ds) cls += ' selected-date';
+                    else if (F.start && F.end) {
+                        let cur = toDate(ds), s = toDate(F.start), e = toDate(F.end);
+                        if (cur > s && cur < e) cls += ' in-range';
+                    }
+                    days += `<button class="${cls}" data-date="${ds}">${d}</button>`;
+                }
+                $('.calendar-days').html(days);
+                $('.start-date-display').text(F.start || 'Not selected');
+                $('.end-date-display').text(F.end || 'Not selected');
+                $('.year-display').text(curYear);
+                $('.month-display').text(MONTHS[curMonth]);
+
+                $('.day-btn').off('click').on('click', function() {
+                    let sel = $(this).data('date');
+                    if (F.pickingStart) {
+                        F.start = sel; F.end = null; F.pickingStart = false;
+                    } else {
+                        let s = toDate(F.start), e = toDate(sel);
+                        if (e < s) { F.end = F.start; F.start = sel; }
+                        else F.end = sel;
+                        F.pickingStart = true;
+                    }
+                    renderCalendar();
+                    if (F.start && F.end) $('.status-selection').removeClass('hidden');
+                });
+            };
+
+            const renderAnnounce = () => {
+                let h = '';
+                announcements.forEach(a => {
+                    h += `<div class="snap-start announcement-card">
+                            <div class="relative h-32 rounded-lg overflow-hidden bg-gradient-to-br ${a.color}">
+                                <img src="${a.image}" alt="${a.title}" class="w-full h-full object-cover opacity-30" />
+                                <div class="absolute inset-0 p-4 flex flex-col justify-end">
+                                    <h3 class="text-white text-base font-semibold mb-1 drop-shadow-lg">${a.title}</h3>
+                                    <p class="text-white text-xs drop-shadow-lg line-clamp-2">${a.description}</p>
+                                </div>
+                            </div>
+                        </div>`;
+                });
+                $('.announcements-container').html(h);
+                lucide.createIcons(); // Re-run for any icons in announcements if needed
+            };
+
+            const renderArticles = () => {
+                let h = '';
+                articles.forEach(a => {
+                    if (F.status !== 'both' && (F.status === 'finished' ? !a.completed : a.completed)) return;
+                    if (!inRange(a.publishedDate)) return;
+                    // Added article-card class for blue border
+                    h += `<div class="article-card bg-white rounded-lg overflow-hidden border border-gray-200 hover:shadow-lg transition-shadow duration-200 cursor-pointer">
+                            <div class="relative aspect-square bg-gray-100">
+                                <img src="${a.image}" alt="${a.title}" class="w-full h-full object-cover" />
+                                <div class="absolute top-2 left-2 bg-black/70 backdrop-blur-sm px-2 py-1 rounded">
+                                    <p class="text-white text-xs font-medium">Max : ${a.maxTime}mins</p>
+                                </div>
+                                ${a.completed ? `<div class="absolute bottom-2 right-2 bg-black/70 backdrop-blur-sm px-2 py-1 rounded">
+                                                    <p class="text-white text-xs font-medium">Score : ${a.score}%</p>
+                                                </div>` : ''}
+                            </div>
+                            <div class="p-3">
+                                <h3 class="text-sm font-medium leading-snug mb-2 line-clamp-2">${a.title}</h3>
+                                <div class="text-xs text-gray-500 mb-1">Published : ${a.publishedDate}</div>
+                                ${a.completed ? `<div class="text-xs text-green-600 font-medium">Finished : ${a.completedDate}</div>` 
+                                              : `<div class="text-xs text-orange-600 font-medium">Pending</div>`}
+                            </div>
+                        </div>`;
+                });
+                $('.articles-container').html(h);
+                lucide.createIcons(); // Re-run for any icons in articles if needed
+            };
+
+            // ---------- initial render ----------
+            renderAnnounce();
+            renderArticles();
+            renderCalendar();
+
+            // ---------- event bindings ----------
+            $('.calendar-btn').on('click', function(e) {
+                e.stopPropagation();
+                $('.calendar-popup').toggle();
+            });
+
+            $(document).on('click', function() {
+                $('.calendar-popup').hide();
+                $('.status-selection').addClass('hidden');
+            });
+
+            $('.calendar-popup').on('click', e => e.stopPropagation());
+
+            // year/month navigation
+            $('.year-up-btn').on('click', () => { curYear++; renderCalendar(); });
+            $('.year-down-btn').on('click', () => { curYear--; renderCalendar(); });
+            $('.month-up-btn').on('click', () => { 
+                if (curMonth === 11) { curMonth = 0; curYear++; } else curMonth++;
+                renderCalendar();
+            });
+            $('.month-down-btn').on('click', () => { 
+                if (curMonth === 0) { curMonth = 11; curYear--; } else curMonth--;
+                renderCalendar();
+            });
+
+            $('.apply-dates').on('click', () => {
+                if (F.start && F.end) $('.status-selection').removeClass('hidden');
+                else alert('Please select both start and end dates');
+            });
+
+            $('.clear-date').on('click', () => {
+                F = { status: 'both', start: null, end: null, pickingStart: true };
+                $('.status-selection').addClass('hidden');
+                renderCalendar();
+                renderArticles();
+            });
+
+            $('.show-finished-btn').on('click', () => {
+                F.status = 'finished';
+                $('.calendar-popup').hide();
+                $('.status-selection').addClass('hidden');
+                renderArticles();
+            });
+
+            $('.show-pending-btn').on('click', () => {
+                F.status = 'pending';
+                $('.calendar-popup').hide();
+                $('.status-selection').addClass('hidden');
+                renderArticles();
+            });
+
+            $('.show-both-btn').on('click', () => {
+                F.status = 'both';
+                $('.calendar-popup').hide();
+                $('.status-selection').addClass('hidden');
+                renderArticles();
+            });
+
+            $('.js-logout-btn').on('click', function() { 
+                 window.location.href = 'login.html'; 
+            });
+
+            $(document).on('click', '.articles-container .article-card', function() {
+                window.location.href = 'article.html';
+            });
+        });
+    </script>
+</body>
+</html>
