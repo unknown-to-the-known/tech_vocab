@@ -10,13 +10,8 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     
-    <!-- FFmpeg.wasm v0.12.6 - CORRECT IMPORTS -->
-    <script src="https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.6/dist/umd/ffmpeg.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.1/dist/umd/index.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/umd/ffmpeg-core.js"></script>
-    
+    <!-- Custom Styles -->
     <style>
-        /* Your existing styles - keep them exactly as before */
         .scrollbar-hide::-webkit-scrollbar { display: none; }
         .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
         
@@ -69,6 +64,19 @@
             cursor: not-allowed;
         }
         
+        .help-btn {
+            background-color: #f87171;
+            color: white;
+            margin-right: 0.75rem;
+        }
+        .help-btn:hover:not(:disabled) { background-color: #ef4444; }
+        
+        .record-btn { background-color: #10b981; color: white; }
+        .record-btn:hover:not(:disabled) { background-color: #059669; }
+        
+        .stop-btn { background-color: #f59e0b; color: white; }
+        .stop-btn:hover:not(:disabled) { background-color: #d97706; }
+        
         .upload-btn { background-color: #3b82f6; color: white; }
         .upload-btn:hover:not(:disabled) { background-color: #2563eb; }
         
@@ -90,90 +98,18 @@
         
         .play-btn.playing { background-color: #ef4444; }
         
-        /* Compression Modal */
-        .compression-modal {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: white;
-            padding: 2rem;
-            border-radius: 1rem;
-            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);
-            z-index: 2000;
-            display: none;
-            min-width: 350px;
-            text-align: center;
-        }
-        
-        .compression-modal.active {
-            display: block;
-        }
-        
-        .progress-bar {
-            width: 100%;
-            height: 20px;
-            background: #e5e7eb;
-            border-radius: 10px;
-            overflow: hidden;
-            margin: 1rem 0;
-        }
-        
-        .progress-fill {
-            height: 100%;
-            background: #3b82f6;
-            width: 0%;
-            transition: width 0.3s ease;
-        }
-        
-        /* File Input */
-        .file-input-container {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: rgba(0, 0, 0, 0.5);
+        .timer-display {
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            font-weight: 500;
+            font-size: 0.875rem;
             display: flex;
             align-items: center;
-            justify-content: center;
-            z-index: 1500;
-            opacity: 0;
-            visibility: hidden;
-            transition: all 0.3s ease;
-        }
-        
-        .file-input-container.active {
-            opacity: 1;
-            visibility: visible;
-        }
-        
-        .file-input-box {
-            background: white;
-            border-radius: 1rem;
-            padding: 2rem;
-            max-width: 500px;
-            width: 90%;
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
-            text-align: center;
-        }
-        
-        .file-input-area {
-            border: 2px dashed #3b82f6;
-            border-radius: 0.75rem;
-            padding: 2rem;
-            margin: 1rem 0;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        
-        .file-input-area:hover {
-            background-color: #f0f9ff;
-        }
-        
-        .file-input-area.dragover {
-            background-color: #dbeafe;
-            border-color: #1d4ed8;
+            gap: 0.5rem;
+            background-color: #f3f4f6;
+            border: 1px solid #e5e7eb;
+            color: #374151;
+            white-space: nowrap;
         }
         
         /* Help Popup Styles */
@@ -270,6 +206,16 @@
             flex-shrink: 0;
         }
         
+        .help-popup-icon i {
+            width: 1rem;
+            height: 1rem;
+        }
+        
+        .help-popup-text {
+            flex: 1;
+            line-height: 1.3;
+        }
+        
         /* Video styles */
         .camera-video {
             width: 100%;
@@ -302,7 +248,7 @@
                 align-items: center;
                 justify-content: center;
                 color: white;
-                box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1);
+                box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.02);
                 border: 2px solid white;
                 z-index: 40;
                 overflow: hidden;
@@ -315,6 +261,7 @@
                 margin-top: 2rem;
             }
             
+            /* Red help icon style */
             .help-icon {
                 color: #ef4444;
                 cursor: pointer;
@@ -324,16 +271,13 @@
                 justify-content: center;
                 transition: color 0.2s;
             }
+            .help-icon:hover {
+                color: #dc2626;
+            }
         }
         
         /* Mobile */
         @media (max-width: 1023px) {
-            .compression-modal {
-                width: 90%;
-                min-width: auto;
-                padding: 1.5rem;
-            }
-            
             .mobile-fixed-bottom {
                 position: fixed;
                 bottom: 0;
@@ -372,9 +316,11 @@
                 box-shadow: 0 6px 12px rgba(0,0,0,0.15);
                 border: 2px solid white;
                 flex-shrink: 0;
+                margin-bottom: 0;
                 overflow: hidden;
             }
             
+            /* Red help icon for mobile */
             .help-icon {
                 color: #ef4444;
                 cursor: pointer;
@@ -384,6 +330,10 @@
                 width: 44px;
                 height: 44px;
                 flex-shrink: 0;
+                margin-bottom: 0;
+            }
+            .help-icon:hover {
+                color: #dc2626;
             }
             
             .action-btn {
@@ -392,6 +342,7 @@
                 font-size: 0.9rem;
                 height: 44px;
                 flex-shrink: 0;
+                margin-bottom: 0;
             }
             
             .button-container {
@@ -406,61 +357,60 @@
                 padding-bottom: 120px;
             }
             
+            .scroll-spacer {
+                height: 30px;
+                width: 100%;
+                display: block;
+            }
+            
+            .article-content {
+                padding: 1rem;
+            }
+            
+            /* ===== LEFT‑ALIGN PARAGRAPHS ===== */
             .article-content p {
                 text-align: left;
             }
             
+            /* ===== REDUCED FONT SIZE FOR ARTICLE TITLE (mobile) ===== */
             .js-article-title {
                 font-size: 1.35rem !important;
                 line-height: 1.3;
             }
             
+            /* ===== REDUCED PADDING FOR "Hi Myself William" BLOCK (top & bottom) ===== */
             .mb-5.p-4.bg-gradient-to-r {
                 padding-top: 0.35rem !important;
                 padding-bottom: 0.35rem !important;
+                padding-left: 0.75rem !important;
+                padding-right: 0.75rem !important;
+                margin-bottom: 0.75rem;
             }
-        }
-
-        .animate-spin {
-            animation: spin 1s linear infinite;
-        }
-        
-        @keyframes spin {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-        }
-
-        .hidden {
-            display: none;
-        }
-
-        .file-info {
-            font-size: 0.875rem;
-            color: #6b7280;
-            margin-top: 0.5rem;
-            text-align: left;
-            padding: 0.5rem;
-            background-color: #f9fafb;
-            border-radius: 0.5rem;
-        }
-
-        .status-badge {
-            font-size: 0.8rem;
-            padding: 0.25rem 0.75rem;
-            border-radius: 1rem;
-            margin-left: 1rem;
-            background-color: #fef3c7;
-            color: #92400e;
-        }
-        
-        .status-badge.ready {
-            background-color: #d1fae5;
-            color: #065f46;
-        }
-        
-        .status-badge.error {
-            background-color: #fee2e2;
-            color: #991b1b;
+            
+            .thankyou-section {
+                margin-bottom: 2rem;
+            }
+            
+            .camera-placeholder i {
+                width: 1.75rem;
+                height: 1.75rem;
+            }
+            
+            .camera-placeholder span {
+                font-size: 0.75rem;
+                margin-top: 0.25rem;
+                font-weight: 500;
+            }
+            
+            .help-popup-container {
+                width: 95%;
+                padding: 1rem;
+            }
+            
+            .help-popup-item {
+                padding: 0.4rem;
+                margin-bottom: 0.5rem;
+            }
         }
     </style>
 </head>
@@ -487,84 +437,41 @@
                     <div class="help-popup-text">Click on <strong>words</strong> to see pronunciation and meaning</div>
                 </div>
                 <div class="help-popup-item">
+                    <div class="help-popup-icon"><i data-lucide="circle"></i></div>
+                    <div class="help-popup-text">Click <strong>START</strong> to record your video</div>
+                </div>
+                <div class="help-popup-item">
+                    <div class="help-popup-icon"><i data-lucide="square"></i></div>
+                    <div class="help-popup-text">Click <strong>STOP</strong> to stop recording</div>
+                </div>
+                <div class="help-popup-item">
                     <div class="help-popup-icon"><i data-lucide="upload"></i></div>
-                    <div class="help-popup-text">Click <strong>UPLOAD VIDEO</strong> to select and compress a video</div>
+                    <div class="help-popup-text">Click <strong>UPLOAD</strong> to upload your video</div>
                 </div>
             </div>
         </div>
-    </div>
-
-    <!-- File Input Modal -->
-    <div class="file-input-container" id="fileInputModal">
-        <div class="file-input-box">
-            <i data-lucide="video" class="w-12 h-12 text-blue-500 mx-auto mb-3"></i>
-            <h3 class="text-xl font-bold mb-2">Select Video</h3>
-            <p class="text-gray-600 mb-4">Choose a video file to compress (max 200MB)</p>
-            
-            <div class="file-input-area" id="fileDropArea">
-                <input type="file" id="videoFileInput" accept="video/*" style="display: none;">
-                <i data-lucide="upload-cloud" class="w-8 h-8 text-blue-500 mx-auto mb-2"></i>
-                <p class="text-sm text-gray-600">Click to browse or drag and drop</p>
-                <p class="text-xs text-gray-400 mt-1">Supported: MP4, MOV, AVI, WebM</p>
-            </div>
-            
-            <div id="selectedFileInfo" class="file-info hidden">
-                <p class="font-medium">Selected File:</p>
-                <p class="text-sm break-all"><span id="fileName"></span></p>
-                <p class="text-sm">Size: <span id="fileSize"></span></p>
-            </div>
-            
-            <div class="flex gap-2 mt-4">
-                <button class="flex-1 bg-gray-200 text-gray-800 py-2 rounded-lg hover:bg-gray-300 transition-colors" id="cancelFileSelect">
-                    Cancel
-                </button>
-                <button class="flex-1 bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" id="confirmFileSelect" disabled>
-                    Compress & Download
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Compression Modal -->
-    <div class="compression-modal" id="compressionModal">
-        <i data-lucide="loader" class="w-16 h-16 text-blue-500 mx-auto mb-3 animate-spin" id="compressionSpinner"></i>
-        <i data-lucide="check-circle" class="w-16 h-16 text-green-500 mx-auto mb-3 hidden" id="compressionSuccess"></i>
-        <i data-lucide="x-circle" class="w-16 h-16 text-red-500 mx-auto mb-3 hidden" id="compressionError"></i>
-        <h3 class="text-xl font-bold mb-2" id="compressionTitle">Processing Video...</h3>
-        <p class="text-gray-600 mb-4" id="compressionMessage">Please wait...</p>
-        
-        <div class="progress-bar">
-            <div class="progress-fill" id="compressionProgress"></div>
-        </div>
-        
-        <div class="text-sm text-gray-500 mb-4" id="compressionDetails"></div>
-        
-        <button class="mt-2 w-full bg-blue-500 text-white py-3 rounded-lg hover:bg-blue-600 transition-colors font-semibold hidden" id="compressionClose">
-            Close
-        </button>
     </div>
 
     <header class="bg-white border-b border-gray-200 px-4 py-2 sticky top-0 z-30">
         <div class="max-w-7xl mx-auto flex items-center justify-between">
+            <!-- Left side: logo + stacked text (Revisewell above Vocab) -->
             <div class="flex items-center gap-1">
+                <!-- Logo (clickable) -->
                 <div class="inline-flex items-center justify-center cursor-pointer" id="logoClick">
-                    <img src="revisewell_logo.png" alt="Revisewell Vocab" class="w-8 h-8">
+                    <img src="images/revisewell_logo.png" alt="Revisewell Vocab" class="w-8 h-8">
                 </div>
+                <!-- Stacked text: Revisewell above Vocab in orange (bold, reduced margin) -->
                 <div class="flex flex-col leading-tight">
                     <span class="font-bold text-lg text-gray-900 mt-2">Revisewell</span>
                     <span class="font-bold text-xs text-orange-500 -mt-1 pl-10">Vocab</span>
                 </div>
             </div>
 
-            <div class="flex items-center gap-3">
-                <span class="status-badge" id="statusBadge">Checking Cross-Origin Isolation...</span>
-                
-                <button class="js-logout-btn border border-blue-600 text-blue-600 px-3 py-1.5 rounded-lg text-sm 
-                             flex items-center gap-2 hover:bg-blue-50 transition-colors bg-transparent">
-                    <i data-lucide="log-out" class="w-4 h-4"></i>
-                    Logout
-                </button>
-            </div>
+            <button class="js-logout-btn border border-blue-600 text-blue-600 px-3 py-1.5 rounded-lg text-sm 
+                         flex items-center gap-2 hover:bg-blue-50 transition-colors bg-transparent">
+                <i data-lucide="log-out" class="w-4 h-4"></i>
+                Logout
+            </button>
         </div>
     </header>
 
@@ -583,6 +490,7 @@
             </div>
         </div>
 
+        <!-- Reduced padding top/bottom for William greeting (mobile via CSS) with yellow highlight -->
         <div class="mb-5 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100">
             <p class="text-gray-800">
               Hi Myself <span class="font-bold text-blue-900"> William,</span>  
@@ -608,14 +516,15 @@
         </div>
 
         <div class="scroll-spacer mobile-only"></div>
+        <div class="scroll-spacer mobile-only"></div>
 
         <div class="button-container desktop-only">
             <div class="help-icon" id="helpIcon">
                 <i data-lucide="help-circle" class="w-6 h-6"></i>
             </div>
-            <button id="dynamicBtn" class="action-btn upload-btn" disabled>
-                <i data-lucide="loader" class="w-4 h-4 animate-spin"></i>
-                Checking Server Headers...
+            <button id="dynamicBtn" class="action-btn record-btn">
+                <i data-lucide="circle" class="w-4 h-4"></i>
+                Record
             </button>
         </div>
 
@@ -629,9 +538,9 @@
             <div class="help-icon" id="mobileHelpIcon">
                 <i data-lucide="help-circle" class="w-6 h-6"></i>
             </div>
-            <button id="mobileDynamicBtn" class="action-btn upload-btn" disabled>
-                <i data-lucide="loader" class="w-4 h-4 animate-spin"></i>
-                Checking Server Headers...
+            <button id="mobileDynamicBtn" class="action-btn record-btn">
+                <i data-lucide="circle" class="w-4 h-4"></i>
+                Record
             </button>
         </div>
         <div class="js-mobile-camera-placeholder camera-placeholder">
@@ -652,226 +561,10 @@
         $(function() {
             lucide.createIcons();
             
+            let isRecording = false;
+            let elapsedSeconds = 0;
+            let timerInterval = null;
             let mediaStream = null;
-            let ffmpeg = null;
-            let selectedFile = null;
-            let isFFmpegReady = false;
-            
-            // Format file size
-            function formatFileSize(bytes) {
-                if (bytes === 0) return '0 Bytes';
-                const k = 1024;
-                const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-                const i = Math.floor(Math.log(bytes) / Math.log(k));
-                return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-            }
-            
-            // Check if server has correct headers
-            function checkCrossOriginIsolation() {
-                if (window.crossOriginIsolated) {
-                    $('#statusBadge').text('✓ Cross-Origin Isolated').addClass('ready');
-                    return true;
-                } else {
-                    $('#statusBadge').text('✗ Missing Headers').addClass('error');
-                    $('#dynamicBtn, #mobileDynamicBtn').prop('disabled', true)
-                        .html('<i data-lucide="alert-circle" class="w-4 h-4"></i> Server Headers Missing');
-                    lucide.createIcons();
-                    
-                    // Show detailed error
-                    $('#compressionModal').addClass('active');
-                    $('#compressionSpinner').addClass('hidden');
-                    $('#compressionError').removeClass('hidden');
-                    $('#compressionTitle').text('Server Configuration Required');
-                    $('#compressionMessage').text('FFmpeg.wasm v0.12+ requires special headers');
-                    $('#compressionDetails').html(
-                        'Your server needs these headers:<br>' +
-                        '<code class="text-xs block mt-2 p-2 bg-gray-100 rounded">Cross-Origin-Opener-Policy: same-origin<br>Cross-Origin-Embedder-Policy: require-corp</code><br>' +
-                        'Contact your server administrator to add them.'
-                    );
-                    $('#compressionClose').removeClass('hidden');
-                    
-                    return false;
-                }
-            }
-            
-            // Initialize FFmpeg v0.12.6 - CORRECT API
-            async function initFFmpeg() {
-                if (!checkCrossOriginIsolation()) {
-                    return;
-                }
-                
-                $('#statusBadge').text('Loading FFmpeg...').removeClass('ready error');
-                
-                try {
-                    // Check if FFmpeg is loaded
-                    if (typeof FFmpeg === 'undefined' || typeof FFmpeg.FFmpeg === 'undefined') {
-                        throw new Error('FFmpeg library not loaded. Check CDN links.');
-                    }
-                    
-                    console.log('Creating FFmpeg instance...');
-                    
-                    // CORRECT API for v0.12+ - use FFmpeg.FFmpeg class
-                    const { FFmpeg: FFmpegClass } = FFmpeg;
-                    ffmpeg = new FFmpegClass();
-                    
-                    // Set up logging
-                    ffmpeg.on('log', ({ message }) => {
-                        console.log('FFmpeg:', message);
-                    });
-                    
-                    ffmpeg.on('progress', ({ progress }) => {
-                        const percent = Math.round(progress * 100);
-                        $('#compressionProgress').css('width', percent + '%');
-                        $('#compressionMessage').text(`Compressing... ${percent}%`);
-                    });
-                    
-                    console.log('Loading FFmpeg core...');
-                    $('#statusBadge').text('Downloading core files...');
-                    
-                    // Load FFmpeg with core URL
-                    await ffmpeg.load({
-                        coreURL: 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/umd/ffmpeg-core.js',
-                    });
-                    
-                    console.log('FFmpeg loaded successfully!');
-                    isFFmpegReady = true;
-                    
-                    // Update UI
-                    $('#statusBadge').text('FFmpeg Ready').addClass('ready');
-                    
-                    // Enable buttons
-                    $('#dynamicBtn, #mobileDynamicBtn').prop('disabled', false)
-                        .html('<i data-lucide="upload" class="w-4 h-4"></i> Upload Video');
-                    lucide.createIcons();
-                    
-                } catch (error) {
-                    console.error('FFmpeg initialization failed:', error);
-                    
-                    $('#statusBadge').text('FFmpeg Failed').addClass('error');
-                    
-                    // Show error in modal
-                    $('#compressionModal').addClass('active');
-                    $('#compressionSpinner').addClass('hidden');
-                    $('#compressionError').removeClass('hidden');
-                    $('#compressionTitle').text('FFmpeg Failed to Load');
-                    $('#compressionMessage').text(error.message);
-                    $('#compressionDetails').html('Check browser console for details.');
-                    $('#compressionClose').removeClass('hidden');
-                    
-                    $('#dynamicBtn, #mobileDynamicBtn').prop('disabled', true)
-                        .html('<i data-lucide="alert-circle" class="w-4 h-4"></i> Failed to Load');
-                    lucide.createIcons();
-                }
-            }
-            
-            // Compress video using FFmpeg
-            async function compressVideo(file) {
-                if (!isFFmpegReady || !ffmpeg) {
-                    alert('FFmpeg is not ready yet. Please wait.');
-                    return;
-                }
-                
-                try {
-                    // Show compression modal
-                    $('#compressionModal').addClass('active');
-                    $('#compressionSpinner').removeClass('hidden');
-                    $('#compressionSuccess').addClass('hidden');
-                    $('#compressionError').addClass('hidden');
-                    $('#compressionClose').addClass('hidden');
-                    $('#compressionProgress').css('width', '0%');
-                    $('#compressionDetails').html('');
-                    
-                    $('#compressionTitle').text('Compressing Video...');
-                    $('#compressionMessage').text('Preparing file...');
-                    
-                    // Read file
-                    $('#compressionMessage').text('Reading video file...');
-                    const fileData = new Uint8Array(await file.arrayBuffer());
-                    
-                    // Write input file to FFmpeg virtual filesystem
-                    $('#compressionMessage').text('Writing to memory...');
-                    await ffmpeg.writeFile('input.mp4', fileData);
-                    
-                    $('#compressionProgress').css('width', '20%');
-                    $('#compressionMessage').text('Compressing video (CRF 28)...');
-                    
-                    // Get original size
-                    const originalSize = file.size;
-                    
-                    // Run FFmpeg compression
-                    await ffmpeg.exec([
-                        '-i', 'input.mp4',
-                        '-c:v', 'libx264',
-                        '-crf', '28',
-                        '-preset', 'fast',
-                        '-c:a', 'aac',
-                        '-b:a', '128k',
-                        '-movflags', '+faststart',
-                        '-y',
-                        'output.mp4'
-                    ]);
-                    
-                    $('#compressionProgress').css('width', '80%');
-                    $('#compressionMessage').text('Finalizing...');
-                    
-                    // Read compressed file
-                    const compressedData = await ffmpeg.readFile('output.mp4');
-                    const compressedBlob = new Blob([compressedData.buffer], { type: 'video/mp4' });
-                    const compressedSize = compressedBlob.size;
-                    
-                    // Calculate compression ratio
-                    const compressionRatio = ((originalSize - compressedSize) / originalSize * 100).toFixed(1);
-                    
-                    $('#compressionProgress').css('width', '100%');
-                    $('#compressionTitle').text('Compression Complete!');
-                    $('#compressionMessage').text('Your video has been compressed');
-                    $('#compressionDetails').html(
-                        `Original: ${formatFileSize(originalSize)}<br>` +
-                        `Compressed: ${formatFileSize(compressedSize)}<br>` +
-                        `Saved: ${compressionRatio}%`
-                    );
-                    $('#compressionSpinner').addClass('hidden');
-                    $('#compressionSuccess').removeClass('hidden');
-                    $('#compressionClose').removeClass('hidden');
-                    
-                    // Create download link
-                    const url = URL.createObjectURL(compressedBlob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    
-                    // Generate filename
-                    const fileName = file.name;
-                    const lastDot = fileName.lastIndexOf('.');
-                    const baseName = fileName.substring(0, lastDot);
-                    a.download = baseName + '_compressed.mp4';
-                    
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
-                    
-                    // Clean up
-                    setTimeout(() => {
-                        URL.revokeObjectURL(url);
-                        try {
-                            ffmpeg.deleteFile('input.mp4');
-                            ffmpeg.deleteFile('output.mp4');
-                        } catch (e) {
-                            console.log('Cleanup error:', e);
-                        }
-                    }, 100);
-                    
-                } catch (error) {
-                    console.error('Compression error:', error);
-                    
-                    $('#compressionTitle').text('Compression Failed');
-                    $('#compressionMessage').text(error.message || 'Failed to compress video');
-                    $('#compressionDetails').html('Please try a different video or refresh the page');
-                    $('#compressionSpinner').addClass('hidden');
-                    $('#compressionSuccess').addClass('hidden');
-                    $('#compressionError').removeClass('hidden');
-                    $('#compressionClose').removeClass('hidden');
-                }
-            }
             
             // Initialize webcam
             function initWebcam() {
@@ -884,18 +577,55 @@
                         })
                         .catch(function(error) {
                             console.log("Webcam error:", error);
-                            $('.js-camera-placeholder, .js-mobile-camera-placeholder').html('<i data-lucide="video-off" class="w-8 h-8"></i><span class="text-sm font-medium mt-1">No Camera</span>');
+                            $('.js-camera-placeholder, .js-mobile-camera-placeholder').html('<i data-lucide="video-off" class="w-8 h-8 mobile:w-7 h-7"></i><span class="text-sm font-medium mt-1 mobile:text-xs">No Camera</span>');
                             lucide.createIcons();
                         });
                 } else {
-                    $('.js-camera-placeholder, .js-mobile-camera-placeholder').html('<i data-lucide="video-off" class="w-8 h-8"></i><span class="text-sm font-medium mt-1">No Camera</span>');
+                    $('.js-camera-placeholder, .js-mobile-camera-placeholder').html('<i data-lucide="video-off" class="w-8 h-8 mobile:w-7 h-7"></i><span class="text-sm font-medium mt-1 mobile:text-xs">No Camera</span>');
                     lucide.createIcons();
                 }
+            }
+            
+            function formatTime(seconds) {
+                const mins = Math.floor(seconds / 60);
+                const secs = seconds % 60;
+                return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+            }
+            
+            function getTimerColor(seconds) {
+                if (seconds <= 30) return 'bg-green-100 text-green-700 border-green-300';
+                if (seconds <= 60) return 'bg-yellow-100 text-yellow-700 border-yellow-300';
+                return 'bg-red-100 text-red-700 border-red-300';
             }
             
             function resetPlayButton() {
                 $('.js-play-btn').removeClass('playing').html('<i data-lucide="volume-2" class="w-4 h-4"></i> Play');
                 lucide.createIcons();
+            }
+            
+            function resetToInitial() {
+                isRecording = false;
+                if (timerInterval) {
+                    clearInterval(timerInterval);
+                    timerInterval = null;
+                    elapsedSeconds = 0;
+                }
+                
+                $('#dynamicBtn, #mobileDynamicBtn').removeClass('stop-btn upload-btn').addClass('record-btn').html('<i data-lucide="circle" class="w-4 h-4"></i> Record');
+                
+                $('.js-play-btn-container').html('<button class="js-play-btn play-btn"><i data-lucide="volume-2" class="w-4 h-4"></i> Play</button>');
+                
+                // Reset to webcam view
+                $('.js-camera-placeholder').html('<video id="desktopVideo" class="camera-video" autoplay playsinline></video>');
+                $('.js-mobile-camera-placeholder').html('<video id="mobileVideo" class="camera-video" autoplay playsinline></video>');
+                
+                if (mediaStream) {
+                    $('#desktopVideo')[0].srcObject = mediaStream;
+                    $('#mobileVideo')[0].srcObject = mediaStream;
+                }
+                
+                lucide.createIcons();
+                attachPlayButtonEvent();
             }
             
             function attachPlayButtonEvent() {
@@ -910,7 +640,6 @@
                 });
             }
             
-            // Help popup handlers
             function handleHelpClick() { $('#helpPopup').addClass('active'); }
             function closeHelpPopup() { $('#helpPopup').removeClass('active'); }
             
@@ -921,135 +650,58 @@
             
             $(document).on('keydown', function(e) { if (e.key === 'Escape' && $('#helpPopup').hasClass('active')) closeHelpPopup(); });
             
-            // Logo click handler
+            // Logo click handler – redirect to dashboard.html
             $('#logoClick').on('click', function() {
                 window.location.href = 'dashboard.html';
             });
             
-            // Upload button click handler - Open file selector
             $('#dynamicBtn, #mobileDynamicBtn').on('click', function() {
-                if (!isFFmpegReady) {
-                    alert('FFmpeg is not ready yet. Please wait...');
-                    return;
+                if ($(this).hasClass('record-btn')) {
+                    isRecording = true;
+                    elapsedSeconds = 0;
+                    
+                    $('#dynamicBtn, #mobileDynamicBtn').removeClass('record-btn').addClass('stop-btn').html('<i data-lucide="square" class="w-4 h-4"></i> Stop');
+                    
+                    $('.js-play-btn-container').html(`<div class="timer-display ${getTimerColor(0)}"><i data-lucide="clock" class="w-4 h-4"></i><span>00:00</span></div>`);
+                    
+                    timerInterval = setInterval(() => {
+                        elapsedSeconds++;
+                        const $timer = $('.js-play-btn-container .timer-display');
+                        const $timerSpan = $timer.find('span');
+                        if ($timer.length && $timerSpan.length) {
+                            $timerSpan.text(formatTime(elapsedSeconds));
+                            $timer.attr('class', `timer-display ${getTimerColor(elapsedSeconds)}`);
+                        }
+                    }, 1000);
+                    
+                    // Add red border effect for recording
+                    $('.js-camera-placeholder, .js-mobile-camera-placeholder').css('border', '3px solid #ef4444');
+                    
+                    lucide.createIcons();
                 }
-                $('#fileInputModal').addClass('active');
-                selectedFile = null;
-                $('#selectedFileInfo').addClass('hidden');
-                $('#confirmFileSelect').prop('disabled', true);
-                $('#videoFileInput').val('');
-            });
-            
-            // File input handlers
-            $('#fileDropArea').on('click', function(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                $('#videoFileInput').trigger('click');
-            });
-            
-            $('#videoFileInput').on('change', function(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                
-                const file = this.files[0];
-                if (file) {
-                    console.log('File selected:', file.name, file.size);
+                else if ($(this).hasClass('stop-btn')) {
+                    isRecording = false;
+                    if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
                     
-                    if (file.size > 200 * 1024 * 1024) {
-                        alert('File too large. Please select a video under 200MB.');
-                        $('#videoFileInput').val('');
-                        return;
-                    }
+                    $('#dynamicBtn, #mobileDynamicBtn').removeClass('stop-btn').addClass('upload-btn').html('<i data-lucide="upload" class="w-4 h-4"></i> Upload');
                     
-                    if (!file.type.startsWith('video/')) {
-                        alert('Please select a valid video file.');
-                        $('#videoFileInput').val('');
-                        return;
-                    }
+                    $('.js-play-btn-container').html('<button class="js-play-btn play-btn"><i data-lucide="volume-2" class="w-4 h-4"></i> Play</button>');
                     
-                    selectedFile = file;
-                    $('#fileName').text(file.name);
-                    $('#fileSize').text(formatFileSize(file.size));
-                    $('#selectedFileInfo').removeClass('hidden');
-                    $('#confirmFileSelect').prop('disabled', false);
+                    // Remove red border
+                    $('.js-camera-placeholder, .js-mobile-camera-placeholder').css('border', '2px solid white');
+                    
+                    lucide.createIcons();
+                    attachPlayButtonEvent();
                 }
-            });
-            
-            // Drag and drop handlers
-            const dropArea = document.getElementById('fileDropArea');
-            
-            dropArea.addEventListener('dragover', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                dropArea.classList.add('dragover');
-            });
-            
-            dropArea.addEventListener('dragleave', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                dropArea.classList.remove('dragover');
-            });
-            
-            dropArea.addEventListener('drop', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                dropArea.classList.remove('dragover');
-                
-                const file = e.dataTransfer.files[0];
-                if (file && file.type.startsWith('video/')) {
-                    if (file.size > 200 * 1024 * 1024) {
-                        alert('File too large. Please select a video under 200MB.');
-                        return;
-                    }
+                else if ($(this).hasClass('upload-btn')) {
+                    $('#dynamicBtn, #mobileDynamicBtn').prop('disabled', true).html('<i data-lucide="loader" class="w-4 h-4 animate-spin"></i> Uploading');
                     
-                    selectedFile = file;
-                    $('#fileName').text(file.name);
-                    $('#fileSize').text(formatFileSize(file.size));
-                    $('#selectedFileInfo').removeClass('hidden');
-                    $('#confirmFileSelect').prop('disabled', false);
+                    // Show uploading animation
+                    $('.js-camera-placeholder, .js-mobile-camera-placeholder').css('border', '2px solid #3b82f6');
                     
-                    // Also set the file input value
-                    const dataTransfer = new DataTransfer();
-                    dataTransfer.items.add(file);
-                    $('#videoFileInput')[0].files = dataTransfer.files;
-                } else {
-                    alert('Please drop a video file.');
+                    lucide.createIcons();
+                    setTimeout(() => { window.location.href = 'article_result.html'; }, 1500);
                 }
-            });
-            
-            // Cancel file selection
-            $('#cancelFileSelect').on('click', function() {
-                $('#fileInputModal').removeClass('active');
-                $('#videoFileInput').val('');
-                selectedFile = null;
-            });
-            
-            // Confirm file selection and start compression
-            $('#confirmFileSelect').on('click', async function() {
-                if (!selectedFile) return;
-                
-                $('#fileInputModal').removeClass('active');
-                
-                // Disable upload buttons
-                $('#dynamicBtn, #mobileDynamicBtn').prop('disabled', true).html('<i data-lucide="loader" class="w-4 h-4 animate-spin"></i> Compressing...');
-                $('.js-camera-placeholder, .js-mobile-camera-placeholder').css('border', '2px solid #3b82f6');
-                lucide.createIcons();
-                
-                // Start compression
-                await compressVideo(selectedFile);
-                
-                $('#videoFileInput').val('');
-                selectedFile = null;
-                
-                // Re-enable buttons
-                $('#dynamicBtn, #mobileDynamicBtn').prop('disabled', false).html('<i data-lucide="upload" class="w-4 h-4"></i> Upload Video');
-                $('.js-camera-placeholder, .js-mobile-camera-placeholder').css('border', '2px solid white');
-                lucide.createIcons();
-            });
-            
-            // Close compression modal
-            $('#compressionClose').on('click', function() {
-                $('#compressionModal').removeClass('active');
-                $('#compressionProgress').css('width', '0%');
             });
             
             // Logout button handler
@@ -1060,17 +712,14 @@
                 window.location.href = 'login.html'; 
             });
             
-            // Initialize
+            // Initialize webcam on page load
             initWebcam();
+            
             attachPlayButtonEvent();
             
-            // Check headers and initialize FFmpeg
-            setTimeout(() => {
-                initFFmpeg();
-            }, 500);
-            
-            // Clean up
+            // Clean up on page unload
             $(window).on('beforeunload', function() { 
+                if (timerInterval) clearInterval(timerInterval);
                 if (mediaStream) {
                     mediaStream.getTracks().forEach(track => track.stop());
                 }
