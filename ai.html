@@ -3,13 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ReviseWell · AI Study Assistant</title>
+  <title>ReviseWell · Chat</title>
   <!-- Tailwind via CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Google Font (Inter) -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:opsz@14..32&display=swap" rel="stylesheet">
   <!-- jQuery -->
-  <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
   <!-- Lucide icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
   <style>
@@ -28,7 +28,7 @@
       100% { transform: translateY(0px) rotate(0deg); }
     }
     
-    /* Background icons container - only visible in listening view */
+    /* Background icons container */
     .background-icons {
       position: fixed;
       top: 0;
@@ -107,10 +107,6 @@
       0%, 100% { opacity: 1; }
       50% { opacity: 0; }
     }
-    .fade-in { animation: fadeIn 0.3s ease forwards; }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-    .slide-up { animation: slideUp 0.3s ease; }
-    @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
     
     /* AI Loading animation */
     .ai-loading {
@@ -145,163 +141,174 @@
     .mic-glow:hover {
       box-shadow: 0 0 30px rgba(234, 88, 12, 0.8);
     }
+    
+    /* Header styles */
+    .chat-header {
+      background: white;
+      border-bottom: 1px solid #e5e7eb;
+      padding: 1rem;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    
+    /* New chat button */
+    .new-chat-btn {
+      background-color: #ea580c;
+      color: white;
+      padding: 0.5rem 1rem;
+      border-radius: 0.5rem;
+      font-size: 0.875rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: background-color 0.2s;
+    }
+    .new-chat-btn:hover {
+      background-color: #c2410c;
+    }
   </style>
 </head>
 <body class="bg-blue-50 antialiased">
 
-<!-- Floating background icons - hidden by default, shown when listening -->
-<div id="backgroundIcons" class="background-icons hidden">
+<!-- Floating background icons -->
+<div class="background-icons">
   <i data-lucide="book-open" class="bg-icon icon-1"></i>
   <i data-lucide="graduation-cap" class="bg-icon icon-2"></i>
   <i data-lucide="atom" class="bg-icon icon-3"></i>
   <i data-lucide="cpu" class="bg-icon icon-4"></i>
 </div>
 
-<!-- MAIN CONTENT -->
-<main class="max-w-6xl mx-auto px-4 py-12">
-  <!-- initial view -->
-  <div id="initialView" class="flex flex-col items-center fade-in">
-    <!-- Title with logo - orange and green -->
-    <div class="flex items-center justify-center gap-2 mb-5">
-      <img src="revisewell_logo.png" alt="ReviseWell Logo" class="w-12 h-12 object-contain">
-      <h1 class="text-4xl font-bold">
-        <span class="text-blue-600">Revisewell</span><span class="text-orange-600"> AI</span>
+<!-- Chat Header -->
+<header class="chat-header">
+  <div class="max-w-6xl mx-auto flex items-center justify-between">
+    <div class="flex items-center gap-2">
+      <img src="revisewell_logo.png" alt="ReviseWell Logo" class="w-8 h-8 object-contain">
+      <h1 class="text-xl font-bold">
+        <span class="text-orange-600">Revisewell</span><span class="text-green-600"> AI</span>
       </h1>
     </div>
-    
-    <!-- Ask Your Question - smaller -->
-    <div class="text-center mb-2">
-      <h2 class="text-lg font-semibold text-gray-800">Ask Your Question</h2>
-    </div>
-    
-    <!-- Instruction paragraph -->
-    <p class="text-sm text-gray-600 mb-6 text-center max-w-md">
-      Click on the microphone icon below and speak your question clearly. I'll listen for 10 seconds and provide a helpful answer.
-    </p>
-    
-    <!-- Ask AI Button - orange -->
-    <button id="askBtn" class="w-24 h-24 rounded-full bg-orange-600 mic-glow flex items-center justify-center hover:bg-orange-700 transition-all duration-300 mb-8">
-      <i data-lucide="mic" class="w-10 h-10 text-white"></i>
+    <button id="newChatBtn" class="new-chat-btn">
+      <i data-lucide="plus" class="w-4 h-4"></i>
+      New Chat
     </button>
-    
-    <!-- Popular Questions Container - white container -->
-    <div id="popularContainer" class="w-full max-w-4xl bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
-      <h3 class="text-sm font-medium text-gray-700 mb-4 text-center">Most people asked:</h3>
-      <div class="flex flex-wrap justify-center gap-2" id="popularQuestionsContainer">
-        <!-- will be populated by jQuery -->
-      </div>
-    </div>
   </div>
+</header>
 
-  <!-- listening view (hidden initially) -->
-  <div id="listeningView" class="hidden flex-col items-center w-full fade-in">
-    <div class="w-full max-w-3xl mb-6">
-      <div class="flex items-start justify-between">
-        <div class="flex-1">
-          <!-- Listening text removed -->
-        </div>
-        <!-- timer circle container - small text with orange -->
-        <div id="timerContainer" class="ml-4 hidden">
-          <div class="relative w-10 h-10">
-            <svg class="w-10 h-10 -rotate-90 transform" viewBox="0 0 36 36">
-              <circle cx="18" cy="18" r="16" fill="none" stroke="#e2e8f0" stroke-width="2.5"></circle>
-              <circle id="timerCircle" cx="18" cy="18" r="16" fill="none" stroke="#ea580c" stroke-width="2.5" stroke-dasharray="100.5" stroke-dashoffset="0" stroke-linecap="round"></circle>
-            </svg>
-            <span id="timerText" class="absolute inset-0 flex items-center justify-center text-xs font-bold text-orange-600">10s</span>
-          </div>
-        </div>
-      </div>
-    </div>
+<!-- MAIN CONTENT -->
+<main class="max-w-4xl mx-auto px-4 py-8">
+  <!-- History container for previous Q&A pairs -->
+  <div id="historyContainer" class="space-y-6 mb-8"></div>
 
-    <!-- question card - resizes to content with mic icon that blinks during listening -->
-    <div class="w-auto max-w-3xl slide-up mb-8">
-      <div class="bg-white rounded-2xl p-5 shadow-lg border border-gray-200 inline-block">
-        <div class="flex items-start gap-3">
-          <div id="micIconContainer" class="p-2.5 bg-orange-500 rounded-full blink-mic flex-shrink-0">
-            <i data-lucide="mic" class="w-4 h-4 text-white"></i>
-          </div>
-          <div>
-            <h3 class="text-xs font-semibold text-gray-500 mb-1">Your Question</h3>
-            <p class="text-gray-800 text-base" id="transcriptText"></p>
+  <!-- Current conversation area (always visible at bottom) -->
+  <div id="currentConversation" class="mt-8">
+    <!-- listening view -->
+    <div id="listeningView" class="flex-col items-center w-full">
+      <div class="w-full mb-6">
+        <div class="flex items-start justify-between">
+          <div class="flex-1"></div>
+          <!-- timer circle container -->
+          <div id="timerContainer" class="ml-4 hidden">
+            <div class="relative w-10 h-10">
+              <svg class="w-10 h-10 -rotate-90 transform" viewBox="0 0 36 36">
+                <circle cx="18" cy="18" r="16" fill="none" stroke="#e2e8f0" stroke-width="2.5"></circle>
+                <circle id="timerCircle" cx="18" cy="18" r="16" fill="none" stroke="#ea580c" stroke-width="2.5" stroke-dasharray="100.5" stroke-dashoffset="0" stroke-linecap="round"></circle>
+              </svg>
+              <span id="timerText" class="absolute inset-0 flex items-center justify-center text-xs font-bold text-orange-600">10s</span>
+            </div>
           </div>
         </div>
       </div>
-    </div>
 
-    <!-- AI Loading Indicator (shown after timer ends, before answer) with robot icon - green -->
-    <div id="aiLoadingContainer" class="w-auto max-w-3xl hidden mb-8">
-      <div class="bg-white rounded-2xl p-5 shadow-lg border border-gray-200 inline-block">
-        <div class="flex items-center gap-4">
-          <div class="p-2 bg-green-100 rounded-lg">
-            <i data-lucide="bot" class="w-5 h-5 text-green-600"></i>
+      <!-- question card -->
+      <div class="w-auto max-w-3xl slide-up mb-8 mx-auto">
+        <div class="bg-white rounded-2xl p-5 shadow-lg border border-gray-200 inline-block">
+          <div class="flex items-start gap-3">
+            <div id="micIconContainer" class="p-2.5 bg-orange-500 rounded-full blink-mic flex-shrink-0">
+              <i data-lucide="mic" class="w-4 h-4 text-white"></i>
+            </div>
+            <div>
+              <h3 class="text-xs font-semibold text-gray-500 mb-1">Your Question</h3>
+              <p class="text-gray-800 text-base" id="transcriptText"></p>
+            </div>
           </div>
-          <div>
-            <h3 class="text-xs font-semibold text-gray-500 mb-2">AI is thinking</h3>
-            <div class="ai-loading">
-              <span></span>
-              <span></span>
-              <span></span>
+        </div>
+      </div>
+
+      <!-- AI Loading Indicator -->
+      <div id="aiLoadingContainer" class="w-auto max-w-3xl hidden mb-8 mx-auto">
+        <div class="bg-white rounded-2xl p-5 shadow-lg border border-gray-200 inline-block">
+          <div class="flex items-center gap-4">
+            <div class="p-2 bg-green-100 rounded-lg">
+              <i data-lucide="bot" class="w-5 h-5 text-green-600"></i>
+            </div>
+            <div>
+              <h3 class="text-xs font-semibold text-gray-500 mb-2">AI is thinking</h3>
+              <div class="ai-loading">
+                <span></span>
+                <span></span>
+                <span></span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- answer card -->
+      <div id="answerContainer" class="w-auto max-w-3xl hidden mx-auto">
+        <div class="bg-white rounded-2xl p-5 shadow-lg border border-gray-200 inline-block">
+          <div class="flex items-start gap-3">
+            <div class="p-2 bg-green-100 rounded-lg flex-shrink-0">
+              <i data-lucide="sparkles" class="w-4 h-4 text-green-600"></i>
+            </div>
+            <div>
+              <h3 class="text-xs font-semibold text-gray-500 mb-1">Answer</h3>
+              <p class="text-gray-800 text-base" id="answerText"></p>
             </div>
           </div>
         </div>
       </div>
     </div>
-
-    <!-- answer card - appears with typing animation after loading, resizes to content - green accent -->
-    <div id="answerContainer" class="w-auto max-w-3xl hidden">
-      <div class="bg-white rounded-2xl p-5 shadow-lg border border-gray-200 inline-block">
-        <div class="flex items-start gap-3">
-          <div class="p-2 bg-green-100 rounded-lg flex-shrink-0">
-            <i data-lucide="sparkles" class="w-4 h-4 text-green-600"></i>
-          </div>
-          <div>
-            <h3 class="text-xs font-semibold text-gray-500 mb-1">Answer</h3>
-            <p class="text-gray-800 text-base" id="answerText"></p>
-          </div>
-        </div>
-      </div>
-    </div>
-    
-    <!-- New Question Button outside and below answer section - orange -->
-    <div id="newQuestionBtnContainer" class="w-full max-w-3xl mt-6 hidden">
-      <div class="flex justify-center">
-        <button class="resetFromResultBtn flex items-center gap-2 px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg text-sm font-medium transition">
-          <i data-lucide="rotate-ccw" class="w-4 h-4"></i> New Question
-        </button>
-      </div>
-    </div>
   </div>
 </main>
 
+<!-- Template for history Q&A item -->
+<template id="historyItemTemplate">
+  <div class="bg-white rounded-2xl p-5 shadow-lg border border-gray-200">
+    <div class="flex items-start gap-3 mb-3">
+      <div class="p-2 bg-orange-500 rounded-full flex-shrink-0">
+        <i data-lucide="mic" class="w-4 h-4 text-white"></i>
+      </div>
+      <div class="flex-1">
+        <h3 class="text-xs font-semibold text-gray-500 mb-1">Your Question</h3>
+        <p class="text-gray-800 text-base history-question"></p>
+      </div>
+    </div>
+    <div class="flex items-start gap-3 pl-9">
+      <div class="p-2 bg-green-100 rounded-lg flex-shrink-0">
+        <i data-lucide="sparkles" class="w-4 h-4 text-green-600"></i>
+      </div>
+      <div class="flex-1">
+        <h3 class="text-xs font-semibold text-gray-500 mb-1">Answer</h3>
+        <p class="text-gray-800 text-base history-answer"></p>
+      </div>
+    </div>
+  </div>
+</template>
+
 <script>
   $(function(){
-    // --- constants ---
     const TIMER_DURATION = 10;
-    const AI_LOADING_DURATION = 1500; // 1.5 seconds loading animation
-    
-    // Popular questions for display
-    const popularQuestions = [
-      "What is AI?",
-      "How does gravity work?",
-      "What is climate change?",
-      "Explain photosynthesis",
-      "How do computers work?",
-      "What is the theory of relativity?"
-    ];
+    const AI_LOADING_DURATION = 1500;
 
-    // --- state variables ---
+    // State variables
     let timeLeft = TIMER_DURATION;
     let timerInterval = null;
-    let typeInterval = null;
     let answerTypeInterval = null;
     let loadingTimeout = null;
-    let isListening = false;
-    let showTimer = false;
     let transcript = '';
 
     // DOM elements
-    const $initialView = $('#initialView');
-    const $listeningView = $('#listeningView');
     const $transcriptSpan = $('#transcriptText');
     const $timerContainer = $('#timerContainer');
     const $timerText = $('#timerText');
@@ -310,19 +317,17 @@
     const $aiLoadingContainer = $('#aiLoadingContainer');
     const $answerContainer = $('#answerContainer');
     const $answerText = $('#answerText');
-    const $newQuestionBtnContainer = $('#newQuestionBtnContainer');
-    const $askBtn = $('#askBtn');
-    const $popularContainer = $('#popularQuestionsContainer');
-    const $backgroundIcons = $('#backgroundIcons');
+    const $historyContainer = $('#historyContainer');
 
-    // Populate popular questions container
-    popularQuestions.forEach((question) => {
-      const $btn = $(`<div class="bg-orange-50 rounded-lg px-3 py-1.5 border border-orange-200 text-gray-700 text-xs hover:bg-orange-100 cursor-pointer transition-colors shadow-sm">${question}</div>`);
-      $btn.on('click', function() {
-        startListeningWithQuestion(question);
-      });
-      $popularContainer.append($btn);
-    });
+    // Check if there's a stored question from microphone page
+    const storedQuestion = localStorage.getItem('revisewell_question');
+    if (storedQuestion) {
+      localStorage.removeItem('revisewell_question');
+      startListeningWithQuestion(storedQuestion);
+    } else {
+      // Auto-start speech recognition when page loads (if no stored question)
+      startSpeechRecognition();
+    }
 
     // Function to scroll to element
     function scrollToElement($element) {
@@ -333,7 +338,7 @@
       }
     }
 
-    // Function to type answer with faster animation
+    // Function to type answer
     function typeAnswer(text, callback) {
       let index = 0;
       $answerText.text('');
@@ -347,10 +352,21 @@
           answerTypeInterval = null;
           if (callback) callback();
         }
-      }, 15); // Fast typing speed
+      }, 15);
     }
 
-    // Function to get AI answer from backend
+    // Function to add Q&A to history
+    function addToHistory(question, answer) {
+      const template = document.getElementById('historyItemTemplate').content.cloneNode(true);
+      const $item = $(template);
+      $item.find('.history-question').text(question);
+      $item.find('.history-answer').text(answer);
+      
+      $historyContainer.prepend($item);
+      refreshIcons();
+    }
+
+    // Function to get AI answer
     function getAIAnswer(question, callback) {
       $.ajax({
         url: 'ai_answer.php',
@@ -359,8 +375,7 @@
         success: function(response) {
           callback(response);
         },
-        error: function(xhr, status, error) {
-          console.error('AI Error:', error);
+        error: function() {
           callback('Sorry, I encountered an error. Please try again.');
         }
       });
@@ -368,27 +383,21 @@
 
     // Function to show AI loading then answer
     function showAIWithLoading(question) {
-      // Hide timer, show loading
       $timerContainer.addClass('hidden');
       $aiLoadingContainer.removeClass('hidden');
       
-      // Scroll to loading indicator
       setTimeout(() => {
         scrollToElement($aiLoadingContainer);
       }, 100);
       
-      // Get real AI answer from backend
       getAIAnswer(question, function(answer) {
-        // Clear any existing timeout
         if (loadingTimeout) clearTimeout(loadingTimeout);
         
-        // After loading duration, show answer with typing animation
         loadingTimeout = setTimeout(() => {
           $aiLoadingContainer.addClass('hidden');
           $answerContainer.removeClass('hidden');
           typeAnswer(answer, function() {
-            $newQuestionBtnContainer.removeClass('hidden');
-            // Scroll to the answer
+            addToHistory(question, answer);
             setTimeout(() => {
               scrollToElement($answerContainer);
             }, 100);
@@ -397,32 +406,20 @@
       });
     }
 
-    // Function to start listening with a predefined question
+    // Function to start listening
     function startListeningWithQuestion(questionText) {
       stopAllIntervals();
-      isListening = true;
-      showTimer = true;
       timeLeft = TIMER_DURATION;
       transcript = questionText;
 
-      $initialView.addClass('hidden').hide();
-      $listeningView.removeClass('hidden').css('display', 'flex');
       $timerContainer.removeClass('hidden');
       $transcriptSpan.text(questionText);
-      
-      // Show background icons when listening starts
-      $backgroundIcons.removeClass('hidden');
-      
-      // Make mic icon blink during listening
       $micIconContainer.removeClass('static-mic').addClass('blink-mic');
-      
       $aiLoadingContainer.addClass('hidden');
       $answerContainer.addClass('hidden');
       $answerText.text('');
-      $newQuestionBtnContainer.addClass('hidden');
       updateTimerDisplay(TIMER_DURATION);
 
-      // start countdown
       timerInterval = setInterval(() => {
         if (timeLeft > 0) {
           timeLeft -= 1;
@@ -430,10 +427,7 @@
           if (timeLeft === 0) {
             clearInterval(timerInterval);
             timerInterval = null;
-            // generate answer
-            showTimer = false;
             
-            // Make mic icon static after listening ends
             $micIconContainer.removeClass('blink-mic').addClass('static-mic');
             
             if (transcript.trim() !== '') {
@@ -444,28 +438,10 @@
       }, 1000);
     }
 
-    // lucide icons refresh
-    function refreshIcons() {
-      if (typeof lucide !== 'undefined' && lucide.createIcons) {
-        lucide.createIcons();
-      }
-    }
-
-    // update timer circle and text
-    function updateTimerDisplay(value) {
-      const radius = 16;
-      const circumference = 2 * Math.PI * radius;
-      const offset = circumference * (1 - value / TIMER_DURATION);
-      $timerCircle.css('stroke-dasharray', circumference);
-      $timerCircle.css('stroke-dashoffset', offset);
-      $timerText.text(`${value}s`);
-    }
-
     // Speech recognition function
     function startSpeechRecognition() {
-      // Check if browser supports speech recognition
       if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-        alert('Speech recognition is not supported in your browser. Please type your question instead.');
+        alert('Speech recognition is not supported in your browser.');
         return;
       }
       
@@ -478,7 +454,6 @@
         let finalTranscript = '';
         
         recognition.onstart = function() {
-          // Start listening with empty transcript
           startListeningWithQuestion('');
         };
         
@@ -489,91 +464,61 @@
             const transcript = event.results[i][0].transcript;
             if (event.results[i].isFinal) {
               finalTranscript += transcript;
-              // Update transcript in real-time
               $transcriptSpan.text(finalTranscript);
               window.transcript = finalTranscript;
             } else {
               interimTranscript += transcript;
-              // Show interim results
               $transcriptSpan.text(finalTranscript + interimTranscript);
             }
           }
         };
         
         recognition.onend = function() {
-          // If we have final transcript, ensure it's set
           if (finalTranscript) {
             transcript = finalTranscript;
             $transcriptSpan.text(finalTranscript);
           }
         };
         
-        recognition.onerror = function(event) {
-          console.error('Speech recognition error:', event.error);
-          resetToInitial();
-          alert('Speech recognition error: ' + event.error + '. Please try again or type your question.');
+        recognition.onerror = function() {
+          alert('Speech recognition error. Please try again.');
         };
         
         recognition.start();
       } catch(e) {
-        console.error('Speech recognition error:', e);
-        alert('Could not start speech recognition. Please type your question.');
+        alert('Could not start speech recognition.');
       }
     }
 
-    // stop all intervals and timeouts
+    function refreshIcons() {
+      if (typeof lucide !== 'undefined' && lucide.createIcons) {
+        lucide.createIcons();
+      }
+    }
+
+    function updateTimerDisplay(value) {
+      const radius = 16;
+      const circumference = 2 * Math.PI * radius;
+      const offset = circumference * (1 - value / TIMER_DURATION);
+      $timerCircle.css('stroke-dasharray', circumference);
+      $timerCircle.css('stroke-dashoffset', offset);
+      $timerText.text(`${value}s`);
+    }
+
     function stopAllIntervals() {
       if (timerInterval) clearInterval(timerInterval);
-      if (typeInterval) clearInterval(typeInterval);
       if (answerTypeInterval) clearInterval(answerTypeInterval);
       if (loadingTimeout) clearTimeout(loadingTimeout);
       timerInterval = null;
-      typeInterval = null;
       answerTypeInterval = null;
       loadingTimeout = null;
     }
 
-    // clean start: reset everything to initial state
-    function resetToInitial() {
-      stopAllIntervals();
-      isListening = false;
-      showTimer = false;
-      transcript = '';
-      timeLeft = TIMER_DURATION;
-      
-      $initialView.removeClass('hidden').css('display', 'flex');
-      $listeningView.addClass('hidden').hide();
-      $transcriptSpan.text('');
-      $timerContainer.addClass('hidden');
-      
-      // Hide background icons when returning to initial view
-      $backgroundIcons.addClass('hidden');
-      
-      $micIconContainer.removeClass('blink-mic static-mic').addClass('blink-mic'); // Reset to blink class
-      $aiLoadingContainer.addClass('hidden');
-      $answerContainer.addClass('hidden');
-      $answerText.text('');
-      $newQuestionBtnContainer.addClass('hidden');
-      updateTimerDisplay(TIMER_DURATION);
-      refreshIcons();
-    }
-
-    // Ask button click (mic) - start real speech recognition
-    $askBtn.on('click', function(){
-      startSpeechRecognition();
+    // New Chat button - redirect to microphone page
+    $('#newChatBtn').on('click', function() {
+      window.location.href = 'ai.html';
     });
 
-    // Reset button handler
-    $(document).on('click', '.resetFromResultBtn', function() {
-      resetToInitial();
-    });
-
-    // Initial hide of listening view
-    $listeningView.hide().addClass('hidden');
-    $newQuestionBtnContainer.addClass('hidden');
-    $backgroundIcons.addClass('hidden');
-
-    // Refresh icons
     refreshIcons();
   });
 </script>

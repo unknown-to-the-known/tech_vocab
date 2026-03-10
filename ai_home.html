@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ReviseWell · Voice Assistant</title>
+  <!-- Tailwind via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Font (Inter) -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz@14..32&display=swap" rel="stylesheet">
+  <!-- Lucide icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    * { font-family: 'Inter', system-ui, sans-serif; }
+    
+    /* Floating animation for background icons */
+    @keyframes float {
+      0% { transform: translateY(0px) rotate(0deg); }
+      50% { transform: translateY(-15px) rotate(3deg); }
+      100% { transform: translateY(0px) rotate(0deg); }
+    }
+    
+    @keyframes floatReverse {
+      0% { transform: translateY(0px) rotate(0deg); }
+      50% { transform: translateY(15px) rotate(-3deg); }
+      100% { transform: translateY(0px) rotate(0deg); }
+    }
+    
+    /* Background icons container */
+    .background-icons {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 0;
+      overflow: hidden;
+    }
+    
+    .bg-icon {
+      position: absolute;
+      opacity: 0.08;
+      color: #2c3e50;
+    }
+    
+    .icon-1 {
+      top: 15%;
+      left: 8%;
+      animation: float 12s ease-in-out infinite;
+      width: 80px;
+      height: 80px;
+    }
+    .icon-2 {
+      bottom: 20%;
+      right: 10%;
+      animation: floatReverse 15s ease-in-out infinite;
+      width: 100px;
+      height: 100px;
+    }
+    .icon-3 {
+      top: 40%;
+      right: 15%;
+      animation: float 10s ease-in-out infinite;
+      width: 60px;
+      height: 60px;
+    }
+    .icon-4 {
+      bottom: 15%;
+      left: 12%;
+      animation: floatReverse 18s ease-in-out infinite;
+      width: 70px;
+      height: 70px;
+    }
+    
+    /* Main content should be above background */
+    main {
+      position: relative;
+      z-index: 1;
+    }
+    
+    /* Mic button glow effect - orange */
+    .mic-glow {
+      box-shadow: 0 0 20px rgba(234, 88, 12, 0.5);
+      transition: box-shadow 0.3s ease;
+    }
+    .mic-glow:hover {
+      box-shadow: 0 0 30px rgba(234, 88, 12, 0.8);
+    }
+  </style>
+</head>
+<body class="bg-blue-50 antialiased">
+
+<!-- Floating background icons -->
+<div class="background-icons">
+  <i data-lucide="book-open" class="bg-icon icon-1"></i>
+  <i data-lucide="graduation-cap" class="bg-icon icon-2"></i>
+  <i data-lucide="atom" class="bg-icon icon-3"></i>
+  <i data-lucide="cpu" class="bg-icon icon-4"></i>
+</div>
+
+<!-- MAIN CONTENT -->
+<main class="max-w-6xl mx-auto px-4 py-12 min-h-screen flex items-center justify-center">
+  <div class="flex flex-col items-center fade-in">
+    <!-- Title with logo - orange and green -->
+    <div class="flex items-center justify-center gap-2 mb-3">
+      <img src="revisewell_logo.png" alt="ReviseWell Logo" class="w-12 h-12 object-contain">
+      <h1 class="text-3xl font-bold">
+        <span class="text-orange-600">Revisewell</span><span class="text-green-600"> AI</span>
+      </h1>
+    </div>
+    
+    <!-- Ask Your Question - smaller -->
+    <div class="text-center mb-2">
+      <h2 class="text-lg font-semibold text-gray-800">Ask Your Question</h2>
+    </div>
+    
+    <!-- Instruction paragraph -->
+    <p class="text-sm text-gray-600 mb-6 text-center max-w-md">
+      Click on the microphone icon below and speak your question clearly. I'll listen and provide a helpful answer.
+    </p>
+    
+    <!-- Mic Button - redirects to chat page -->
+    <button id="micButton" class="w-24 h-24 rounded-full bg-orange-600 mic-glow flex items-center justify-center hover:bg-orange-700 transition-all duration-300 mb-8">
+      <i data-lucide="mic" class="w-10 h-10 text-white"></i>
+    </button>
+    
+    <!-- Popular Questions Container - white container -->
+    <div class="w-full max-w-4xl bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
+      <h3 class="text-sm font-medium text-gray-700 mb-4 text-center">Most people asked:</h3>
+      <div class="flex flex-wrap justify-center gap-2" id="popularQuestionsContainer">
+        <!-- populated by JavaScript -->
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+  // Popular questions for display
+  const popularQuestions = [
+    "What is AI?",
+    "How does gravity work?",
+    "What is climate change?",
+    "Explain photosynthesis",
+    "How do computers work?",
+    "What is the theory of relativity?"
+  ];
+
+  // Populate popular questions container
+  const container = document.getElementById('popularQuestionsContainer');
+  popularQuestions.forEach((question) => {
+    const btn = document.createElement('div');
+    btn.className = 'bg-orange-50 rounded-lg px-3 py-1.5 border border-orange-200 text-gray-700 text-xs hover:bg-orange-100 cursor-pointer transition-colors shadow-sm';
+    btn.textContent = question;
+    btn.onclick = function() {
+      // Store the question in localStorage and redirect to chat page
+      localStorage.setItem('revisewell_question', question);
+      window.location.href = 'chat_page.html';
+    };
+    container.appendChild(btn);
+  });
+
+  // Mic button click - redirect to chat page
+  document.getElementById('micButton').addEventListener('click', function() {
+    localStorage.removeItem('revisewell_question'); // Clear any stored question
+    window.location.href = 'ai.html';
+  });
+
+  // Initialize Lucide icons
+  lucide.createIcons();
+</script>
+</body>
+</html>
