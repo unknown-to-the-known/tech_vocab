@@ -188,25 +188,22 @@
       cursor: pointer;
       transition: all 0.2s ease;
       border: none;
-      background: transparent;
-    }
-    
-    .action-button:hover {
-      transform: scale(1.1);
     }
     
     #submitQuestion {
-      color: #16a34a;
+      background-color: #16a34a;
     }
     #submitQuestion:hover {
-      color: #15803d;
+      background-color: #15803d;
+      transform: scale(1.05);
     }
     
     #voiceInputButton {
-      color: #ea580c;
+      background-color: #ea580c;
     }
     #voiceInputButton:hover {
-      color: #c2410c;
+      background-color: #c2410c;
+      transform: scale(1.05);
     }
     
     /* Merged Q&A container */
@@ -216,7 +213,7 @@
       padding: 1.25rem;
       box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
       border: 1px solid #e5e7eb;
-      margin-bottom: 7rem;
+      margin-bottom: 7rem; /* Space for fixed input */
     }
     
     .qa-pair {
@@ -243,10 +240,10 @@
   <div class="input-wrapper">
     <input type="text" id="questionInput" placeholder="Type your question here..." autocomplete="off">
     <button id="voiceInputButton" class="action-button" title="Click to speak">
-      <i data-lucide="mic" class="w-5 h-5"></i>
+      <i data-lucide="mic" class="w-5 h-5 text-white"></i>
     </button>
     <button id="submitQuestion" class="action-button" title="Send question">
-      <i data-lucide="send" class="w-5 h-5"></i>
+      <i data-lucide="send" class="w-5 h-5 text-white"></i>
     </button>
   </div>
 </div>
@@ -264,11 +261,11 @@
     <div id="listeningView" class="flex-col items-center w-full">
       <div class="w-full max-w-3xl mb-6 mx-auto">
         <div class="flex items-start justify-between">
-          <!-- Bold Listening text on left - only shown during voice input -->
+          <!-- Bold Listening text on left -->
           <div class="flex-1">
-            <h2 id="listeningText" class="text-2xl font-bold text-gray-800 hidden">Listening...</h2>
+            <h2 id="listeningText" class="text-2xl font-bold text-gray-800">Listening...</h2>
           </div>
-          <!-- timer circle container - only shown during voice input -->
+          <!-- timer circle container -->
           <div id="timerContainer" class="ml-4 hidden">
             <div class="relative w-10 h-10">
               <svg class="w-10 h-10 -rotate-90 transform" viewBox="0 0 36 36">
@@ -285,7 +282,7 @@
       <div class="w-auto max-w-3xl slide-up mb-8 mx-auto">
         <div class="bg-white rounded-2xl p-5 shadow-lg border border-gray-200 inline-block">
           <div class="flex items-start gap-3">
-            <div id="micIconContainer" class="p-2.5 bg-orange-500 rounded-full flex-shrink-0">
+            <div id="micIconContainer" class="p-2.5 bg-orange-500 rounded-full blink-mic flex-shrink-0">
               <i data-lucide="mic" class="w-4 h-4 text-white"></i>
             </div>
             <div>
@@ -368,11 +365,9 @@
     const storedQuestion = localStorage.getItem('revisewell_question');
     if (storedQuestion) {
       localStorage.removeItem('revisewell_question');
-      startListeningWithQuestion(storedQuestion, true); // true indicates voice input
+      startListeningWithQuestion(storedQuestion);
     } else {
-      // Show input container for typing
-      $questionInputContainer.show();
-      $questionInput.focus();
+      startSpeechRecognition();
     }
 
     function scrollToElement($element) {
@@ -495,7 +490,7 @@
       });
     }
 
-    function startListeningWithQuestion(questionText, isVoiceInput = false) {
+    function startListeningWithQuestion(questionText) {
       stopAllIntervals();
       timeLeft = TIMER_DURATION;
       transcript = questionText;
@@ -506,51 +501,35 @@
       // Show the question card
       $('.w-auto.max-w-3xl.slide-up.mb-8.mx-auto').show();
       
-      // Show listening text and timer ONLY for voice input
-      if (isVoiceInput) {
-        $listeningText.removeClass('hidden');
-        $timerContainer.removeClass('hidden');
-        $micIconContainer.addClass('blink-mic');
-      } else {
-        $listeningText.addClass('hidden');
-        $timerContainer.addClass('hidden');
-        $micIconContainer.removeClass('blink-mic');
-      }
-      
+      // Show listening text and timer
+      $listeningText.removeClass('hidden');
+      $timerContainer.removeClass('hidden');
       $transcriptSpan.text(questionText);
-      $micIconContainer.removeClass('static-mic');
+      $micIconContainer.removeClass('static-mic').addClass('blink-mic');
       $aiLoadingContainer.addClass('hidden');
       $answerContainer.addClass('hidden');
       $answerText.text('');
       updateTimerDisplay(TIMER_DURATION);
 
-      // Only start timer for voice input
-      if (isVoiceInput) {
-        timerInterval = setInterval(() => {
-          if (timeLeft > 0) {
-            timeLeft -= 1;
-            updateTimerDisplay(timeLeft);
-            if (timeLeft === 0) {
-              clearInterval(timerInterval);
-              timerInterval = null;
-              
-              // Hide listening text and timer when countdown completes
-              $listeningText.addClass('hidden');
-              $timerContainer.addClass('hidden');
-              $micIconContainer.removeClass('blink-mic').addClass('static-mic');
-              
-              if (transcript.trim() !== '') {
-                showAIWithLoading(transcript);
-              }
+      timerInterval = setInterval(() => {
+        if (timeLeft > 0) {
+          timeLeft -= 1;
+          updateTimerDisplay(timeLeft);
+          if (timeLeft === 0) {
+            clearInterval(timerInterval);
+            timerInterval = null;
+            
+            // Hide listening text and timer when countdown completes
+            $listeningText.addClass('hidden');
+            $timerContainer.addClass('hidden');
+            $micIconContainer.removeClass('blink-mic').addClass('static-mic');
+            
+            if (transcript.trim() !== '') {
+              showAIWithLoading(transcript);
             }
           }
-        }, 1000);
-      } else {
-        // For typed questions, immediately show AI loading
-        if (transcript.trim() !== '') {
-          showAIWithLoading(transcript);
         }
-      }
+      }, 1000);
     }
 
     function startSpeechRecognition() {
@@ -568,7 +547,7 @@
         let finalTranscript = '';
         
         recognition.onstart = function() {
-          startListeningWithQuestion('', true); // true indicates voice input
+          startListeningWithQuestion('');
         };
         
         recognition.onresult = function(event) {
@@ -632,7 +611,7 @@
       const question = $questionInput.val().trim();
       if (question) {
         $questionInput.val('');
-        startListeningWithQuestion(question, false); // false indicates typed input
+        startListeningWithQuestion(question);
       }
     });
 
