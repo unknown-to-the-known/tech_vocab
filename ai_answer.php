@@ -1,6 +1,6 @@
 <?php
 
-$api_key = "YOUR_OPENAI_API_KEY";
+$api_key = "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";
 
 $question = $_POST['question'];
 
