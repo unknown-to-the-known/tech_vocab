@@ -1,7 +1,7 @@
 <?php
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
-$api_key = "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";
+$api_key = "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";
 
 $question = $_POST['question'];
 
