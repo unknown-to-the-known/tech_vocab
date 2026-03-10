@@ -146,31 +146,64 @@
       box-shadow: 0 0 30px rgba(234, 88, 12, 0.8);
     }
     
-    /* Microphone button container - fixed at bottom right */
-    .mic-button-container {
+    /* Question input container - fixed at bottom */
+    .question-input-container {
       position: fixed;
       bottom: 2rem;
-      right: 2rem;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 90%;
+      max-width: 600px;
       z-index: 20;
+      display: none;
     }
     
-    /* Next question mic button */
-    #nextQuestionMic {
-      width: 4rem;
-      height: 4rem;
+    .input-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: white;
+      border-radius: 9999px;
+      padding: 0.5rem 0.5rem 0.5rem 1.5rem;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+      border: 1px solid #e5e7eb;
+    }
+    
+    #questionInput {
+      flex: 1;
+      border: none;
+      outline: none;
+      padding: 0.75rem 0;
+      font-size: 1rem;
+      background: transparent;
+    }
+    
+    .action-button {
+      width: 3rem;
+      height: 3rem;
       border-radius: 50%;
-      background-color: #ea580c;
       display: flex;
       align-items: center;
       justify-content: center;
       cursor: pointer;
-      box-shadow: 0 0 20px rgba(234, 88, 12, 0.5);
-      transition: all 0.3s ease;
+      transition: all 0.2s ease;
+      border: none;
     }
-    #nextQuestionMic:hover {
+    
+    #submitQuestion {
+      background-color: #16a34a;
+    }
+    #submitQuestion:hover {
+      background-color: #15803d;
+      transform: scale(1.05);
+    }
+    
+    #voiceInputButton {
+      background-color: #ea580c;
+    }
+    #voiceInputButton:hover {
       background-color: #c2410c;
       transform: scale(1.05);
-      box-shadow: 0 0 30px rgba(234, 88, 12, 0.8);
     }
     
     /* Merged Q&A container */
@@ -180,6 +213,7 @@
       padding: 1.25rem;
       box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
       border: 1px solid #e5e7eb;
+      margin-bottom: 7rem; /* Space for fixed input */
     }
     
     .qa-pair {
@@ -201,10 +235,16 @@
   <i data-lucide="cpu" class="bg-icon icon-4"></i>
 </div>
 
-<!-- Microphone button for next question - appears after answer -->
-<div id="micButtonContainer" class="mic-button-container hidden">
-  <div id="nextQuestionMic" class="blink-mic">
-    <i data-lucide="mic" class="w-6 h-6 text-white"></i>
+<!-- Question input container - appears after answer -->
+<div id="questionInputContainer" class="question-input-container">
+  <div class="input-wrapper">
+    <input type="text" id="questionInput" placeholder="Type your question here..." autocomplete="off">
+    <button id="voiceInputButton" class="action-button" title="Click to speak">
+      <i data-lucide="mic" class="w-5 h-5 text-white"></i>
+    </button>
+    <button id="submitQuestion" class="action-button" title="Send question">
+      <i data-lucide="send" class="w-5 h-5 text-white"></i>
+    </button>
   </div>
 </div>
 
@@ -302,6 +342,7 @@
     let loadingTimeout = null;
     let transcript = '';
     let qaPairs = []; // Store all Q&A pairs
+    let isProcessing = false; // Prevent duplicate processing
 
     // DOM elements
     const $listeningText = $('#listeningText');
@@ -315,8 +356,10 @@
     const $answerText = $('#answerText');
     const $mergedQAContainer = $('#mergedQAContainer');
     const $qaPairsContainer = $('#qaPairsContainer');
-    const $micButtonContainer = $('#micButtonContainer');
-    const $nextQuestionMic = $('#nextQuestionMic');
+    const $questionInputContainer = $('#questionInputContainer');
+    const $questionInput = $('#questionInput');
+    const $voiceInputButton = $('#voiceInputButton');
+    const $submitButton = $('#submitQuestion');
 
     // Check for stored question from microphone page
     const storedQuestion = localStorage.getItem('revisewell_question');
@@ -407,6 +450,9 @@
     }
 
     function showAIWithLoading(question) {
+      if (isProcessing) return;
+      isProcessing = true;
+      
       $timerContainer.addClass('hidden');
       $aiLoadingContainer.removeClass('hidden');
       
@@ -421,14 +467,23 @@
           $aiLoadingContainer.addClass('hidden');
           $answerContainer.removeClass('hidden');
           typeAnswer(answer, function() {
-            // Add to merged container instead of separate history
+            // Add to merged container
             addToMergedContainer(question, answer);
             
-            // Show microphone button for next question
-            $micButtonContainer.removeClass('hidden');
+            // Hide the current question and answer cards
+            $('.w-auto.max-w-3xl.slide-up.mb-8.mx-auto').hide();
+            $answerContainer.addClass('hidden');
+            
+            // Show the question input container
+            $questionInputContainer.show();
+            
+            // Focus on input
+            $questionInput.focus();
+            
+            isProcessing = false;
             
             setTimeout(() => {
-              scrollToElement($answerContainer);
+              scrollToElement($questionInputContainer);
             }, 100);
           });
         }, AI_LOADING_DURATION);
@@ -440,8 +495,11 @@
       timeLeft = TIMER_DURATION;
       transcript = questionText;
 
-      // Hide the mic button when starting new question
-      $micButtonContainer.addClass('hidden');
+      // Hide the question input container
+      $questionInputContainer.hide();
+      
+      // Show the question card
+      $('.w-auto.max-w-3xl.slide-up.mb-8.mx-auto').show();
       
       // Show listening text and timer
       $listeningText.removeClass('hidden');
@@ -548,9 +606,26 @@
       loadingTimeout = null;
     }
 
-    // Next question mic button click handler
-    $nextQuestionMic.on('click', function() {
+    // Submit question from input
+    $submitButton.on('click', function() {
+      const question = $questionInput.val().trim();
+      if (question) {
+        $questionInput.val('');
+        startListeningWithQuestion(question);
+      }
+    });
+
+    // Voice input button
+    $voiceInputButton.on('click', function() {
       startSpeechRecognition();
+    });
+
+    // Allow Enter key to submit
+    $questionInput.on('keypress', function(e) {
+      if (e.which === 13) { // Enter key
+        e.preventDefault();
+        $submitButton.click();
+      }
     });
 
     refreshIcons();
