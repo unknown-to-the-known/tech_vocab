@@ -6,74 +6,14 @@
   <title>ReviseWell · AI Study Assistant</title>
   <!-- Tailwind via CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Google Font (Inter) -->
-  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz@14..32&display=swap" rel="stylesheet">
+  <!-- Google Font (Nunito) -->
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
   <!-- Lucide icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
   <style>
-    * { font-family: 'Inter', system-ui, sans-serif; }
+    * { font-family: 'Nunito', sans-serif; }
     
-    /* Floating animation for background icons */
-    @keyframes float {
-      0% { transform: translateY(0px) rotate(0deg); }
-      50% { transform: translateY(-15px) rotate(3deg); }
-      100% { transform: translateY(0px) rotate(0deg); }
-    }
-    
-    @keyframes floatReverse {
-      0% { transform: translateY(0px) rotate(0deg); }
-      50% { transform: translateY(15px) rotate(-3deg); }
-      100% { transform: translateY(0px) rotate(0deg); }
-    }
-    
-    /* Background icons container */
-    .background-icons {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      pointer-events: none;
-      z-index: 0;
-      overflow: hidden;
-    }
-    
-    .bg-icon {
-      position: absolute;
-      opacity: 0.08;
-      color: #2c3e50;
-    }
-    
-    .icon-1 {
-      top: 15%;
-      left: 8%;
-      animation: float 12s ease-in-out infinite;
-      width: 80px;
-      height: 80px;
-    }
-    .icon-2 {
-      bottom: 20%;
-      right: 10%;
-      animation: floatReverse 15s ease-in-out infinite;
-      width: 100px;
-      height: 100px;
-    }
-    .icon-3 {
-      top: 40%;
-      right: 15%;
-      animation: float 10s ease-in-out infinite;
-      width: 60px;
-      height: 60px;
-    }
-    .icon-4 {
-      bottom: 15%;
-      left: 12%;
-      animation: floatReverse 18s ease-in-out infinite;
-      width: 70px;
-      height: 70px;
-    }
-    
-    /* Main content should be above background */
+    /* Main content */
     main {
       position: relative;
       z-index: 1;
@@ -91,19 +31,11 @@
 </head>
 <body class="bg-blue-50 antialiased">
 
-<!-- Floating background icons -->
-<div class="background-icons">
-  <i data-lucide="book-open" class="bg-icon icon-1"></i>
-  <i data-lucide="graduation-cap" class="bg-icon icon-2"></i>
-  <i data-lucide="atom" class="bg-icon icon-3"></i>
-  <i data-lucide="cpu" class="bg-icon icon-4"></i>
-</div>
-
 <!-- MAIN CONTENT -->
 <main class="max-w-6xl mx-auto px-4 py-12">
   <!-- initial view -->
   <div id="initialView" class="flex flex-col items-center fade-in">
-    <!-- Title with logo - orange and green -->
+    <!-- Title with logo - orange and green with Nunito font -->
     <div class="flex items-center justify-center gap-2 mb-3">
       <img src="revisewell_logo.png" alt="ReviseWell Logo" class="w-12 h-12 object-contain">
       <h1 class="text-3xl font-bold">
