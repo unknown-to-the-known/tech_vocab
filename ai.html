@@ -14,6 +14,21 @@
   <script src="https://unpkg.com/lucide@latest"></script>
   <style>
     * { font-family: 'Inter', system-ui, sans-serif; }
+    
+    /* Background animation */
+    @keyframes gradientShift {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+    
+    .animated-bg {
+      background: linear-gradient(-45deg, #e6f0ff, #dbeafe, #e0e7ff, #c7d2fe);
+      background-size: 400% 400%;
+      animation: gradientShift 15s ease infinite;
+      min-height: 100vh;
+    }
+    
     @keyframes softPulse {
       0% { opacity: 1; transform: scale(1); }
       50% { opacity: 0.7; transform: scale(1.1); }
@@ -74,34 +89,48 @@
       0%, 80%, 100% { transform: scale(0); opacity: 0.3; }
       40% { transform: scale(1); opacity: 1; }
     }
+    
+    /* Mic button glow effect */
+    .mic-glow {
+      box-shadow: 0 0 20px rgba(37, 99, 235, 0.5);
+      transition: box-shadow 0.3s ease;
+    }
+    .mic-glow:hover {
+      box-shadow: 0 0 30px rgba(37, 99, 235, 0.8);
+    }
   </style>
 </head>
-<body class="min-h-screen bg-blue-50 antialiased">
+<body class="animated-bg antialiased">
 
 <!-- MAIN CONTENT -->
 <main class="max-w-6xl mx-auto px-4 py-12">
   <!-- initial view -->
   <div id="initialView" class="flex flex-col items-center fade-in">
-    <!-- Title with logo on left side -->
-    <div class="flex items-center justify-center gap-3 mb-4">
-      <img src="revisewell_logo.png" alt="ReviseWell Logo" class="w-6 h-6 object-contain">
-      <h1 class="text-3xl font-bold text-blue-900">Revisewell</h1>
+    <!-- Title with logo - smaller -->
+    <div class="flex items-center justify-center gap-2 mb-3">
+      <img src="revisewell_logo.png" alt="ReviseWell Logo" class="w-5 h-5 object-contain">
+      <h1 class="text-2xl font-bold text-blue-900">Revisewell</h1>
     </div>
     
-    <!-- Ask Your Question -->
-    <div class="text-center mb-8">
-      <h2 class="text-2xl font-semibold text-gray-800">Ask Your Question</h2>
+    <!-- Ask Your Question - smaller -->
+    <div class="text-center mb-3">
+      <h2 class="text-xl font-semibold text-gray-800">Ask Your Question</h2>
     </div>
     
-    <!-- Ask AI Button -->
-    <button id="askBtn" class="w-32 h-32 rounded-full bg-blue-600 shadow-2xl flex items-center justify-center hover:bg-blue-700 transition-colors duration-300 mb-8">
-      <i data-lucide="mic" class="w-12 h-12 text-white"></i>
+    <!-- Instruction paragraph -->
+    <p class="text-sm text-gray-600 mb-6 text-center max-w-md">
+      Click on the microphone icon below and speak your question clearly. I'll listen for 10 seconds and provide a helpful answer.
+    </p>
+    
+    <!-- Ask AI Button - smaller -->
+    <button id="askBtn" class="w-24 h-24 rounded-full bg-blue-600 mic-glow flex items-center justify-center hover:bg-blue-700 transition-all duration-300 mb-8">
+      <i data-lucide="mic" class="w-10 h-10 text-white"></i>
     </button>
     
     <!-- Popular Questions Container -->
     <div id="popularContainer" class="w-full max-w-4xl">
-      <h3 class="text-lg font-semibold text-gray-700 mb-4 text-center">Most people asked:</h3>
-      <div class="flex flex-wrap justify-center gap-3" id="popularQuestionsContainer">
+      <h3 class="text-sm font-medium text-gray-700 mb-3 text-center">Most people asked:</h3>
+      <div class="flex flex-wrap justify-center gap-2" id="popularQuestionsContainer">
         <!-- will be populated by jQuery -->
       </div>
     </div>
@@ -116,8 +145,8 @@
         </div>
         <!-- timer circle container - small text -->
         <div id="timerContainer" class="ml-4 hidden">
-          <div class="relative w-12 h-12">
-            <svg class="w-12 h-12 -rotate-90 transform" viewBox="0 0 36 36">
+          <div class="relative w-10 h-10">
+            <svg class="w-10 h-10 -rotate-90 transform" viewBox="0 0 36 36">
               <circle cx="18" cy="18" r="16" fill="none" stroke="#e2e8f0" stroke-width="2.5"></circle>
               <circle id="timerCircle" cx="18" cy="18" r="16" fill="none" stroke="#3b82f6" stroke-width="2.5" stroke-dasharray="100.5" stroke-dashoffset="0" stroke-linecap="round"></circle>
             </svg>
@@ -129,14 +158,14 @@
 
     <!-- question card - resizes to content with mic icon that blinks during listening -->
     <div class="w-auto max-w-3xl slide-up mb-8">
-      <div class="bg-white rounded-2xl p-6 shadow-lg border border-gray-200 inline-block">
+      <div class="bg-white rounded-2xl p-5 shadow-lg border border-gray-200 inline-block">
         <div class="flex items-start gap-3">
-          <div id="micIconContainer" class="p-3 bg-red-500 rounded-full blink-mic flex-shrink-0">
-            <i data-lucide="mic" class="w-5 h-5 text-white"></i>
+          <div id="micIconContainer" class="p-2.5 bg-red-500 rounded-full blink-mic flex-shrink-0">
+            <i data-lucide="mic" class="w-4 h-4 text-white"></i>
           </div>
           <div>
-            <h3 class="text-sm font-semibold text-gray-500 mb-1">Your Question</h3>
-            <p class="text-gray-800 text-lg" id="transcriptText"></p>
+            <h3 class="text-xs font-semibold text-gray-500 mb-1">Your Question</h3>
+            <p class="text-gray-800 text-base" id="transcriptText"></p>
           </div>
         </div>
       </div>
@@ -144,13 +173,13 @@
 
     <!-- AI Loading Indicator (shown after timer ends, before answer) with robot icon -->
     <div id="aiLoadingContainer" class="w-auto max-w-3xl hidden mb-8">
-      <div class="bg-white rounded-2xl p-6 shadow-lg border border-gray-200 inline-block">
+      <div class="bg-white rounded-2xl p-5 shadow-lg border border-gray-200 inline-block">
         <div class="flex items-center gap-4">
           <div class="p-2 bg-blue-100 rounded-lg">
-            <i data-lucide="bot" class="w-6 h-6 text-blue-600"></i>
+            <i data-lucide="bot" class="w-5 h-5 text-blue-600"></i>
           </div>
           <div>
-            <h3 class="text-sm font-semibold text-gray-500 mb-2">AI is thinking</h3>
+            <h3 class="text-xs font-semibold text-gray-500 mb-2">AI is thinking</h3>
             <div class="ai-loading">
               <span></span>
               <span></span>
@@ -163,14 +192,14 @@
 
     <!-- answer card - appears with typing animation after loading, resizes to content -->
     <div id="answerContainer" class="w-auto max-w-3xl hidden">
-      <div class="bg-white rounded-2xl p-6 shadow-lg border border-gray-200 inline-block">
+      <div class="bg-white rounded-2xl p-5 shadow-lg border border-gray-200 inline-block">
         <div class="flex items-start gap-3">
           <div class="p-2 bg-green-100 rounded-lg flex-shrink-0">
-            <i data-lucide="sparkles" class="w-5 h-5 text-green-600"></i>
+            <i data-lucide="sparkles" class="w-4 h-4 text-green-600"></i>
           </div>
           <div>
-            <h3 class="text-sm font-semibold text-gray-500 mb-1">Answer</h3>
-            <p class="text-gray-800 text-lg" id="answerText"></p>
+            <h3 class="text-xs font-semibold text-gray-500 mb-1">Answer</h3>
+            <p class="text-gray-800 text-base" id="answerText"></p>
           </div>
         </div>
       </div>
@@ -230,7 +259,7 @@
 
     // Populate popular questions container
     popularQuestions.forEach((question) => {
-      const $btn = $(`<div class="bg-blue-50 rounded-lg px-4 py-2 border border-blue-200 text-gray-700 text-sm hover:bg-blue-100 cursor-pointer transition-colors">${question}</div>`);
+      const $btn = $(`<div class="bg-white/80 backdrop-blur-sm rounded-lg px-3 py-1.5 border border-blue-200 text-gray-700 text-xs hover:bg-blue-100 cursor-pointer transition-colors shadow-sm">${question}</div>`);
       $btn.on('click', function() {
         startListeningWithQuestion(question);
       });
@@ -401,7 +430,7 @@
               finalTranscript += transcript;
               // Update transcript in real-time
               $transcriptSpan.text(finalTranscript);
-              transcript = finalTranscript;
+              window.transcript = finalTranscript;
             } else {
               interimTranscript += transcript;
               // Show interim results
