@@ -15,25 +15,72 @@
   <style>
     * { font-family: 'Inter', system-ui, sans-serif; }
     
-    /* Background animation */
-    @keyframes gradientShift {
-      0% { background-position: 0% 50%; }
-      50% { background-position: 100% 50%; }
-      100% { background-position: 0% 50%; }
+    /* Floating animation for background icons */
+    @keyframes float {
+      0% { transform: translateY(0px) rotate(0deg); }
+      50% { transform: translateY(-15px) rotate(3deg); }
+      100% { transform: translateY(0px) rotate(0deg); }
     }
     
-    .animated-bg {
-      background: linear-gradient(-45deg, #fff7ed, #f0fdf4, #fff1e6, #dcfce7);
-      background-size: 400% 400%;
-      animation: gradientShift 15s ease infinite;
-      min-height: 100vh;
+    @keyframes floatReverse {
+      0% { transform: translateY(0px) rotate(0deg); }
+      50% { transform: translateY(15px) rotate(-3deg); }
+      100% { transform: translateY(0px) rotate(0deg); }
     }
     
-    @keyframes softPulse {
-      0% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.7; transform: scale(1.1); }
-      100% { opacity: 1; transform: scale(1); }
+    /* Background icons container - only visible in listening view */
+    .background-icons {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 0;
+      overflow: hidden;
     }
+    
+    .bg-icon {
+      position: absolute;
+      opacity: 0.08;
+      color: #2c3e50;
+    }
+    
+    .icon-1 {
+      top: 15%;
+      left: 8%;
+      animation: float 12s ease-in-out infinite;
+      width: 80px;
+      height: 80px;
+    }
+    .icon-2 {
+      bottom: 20%;
+      right: 10%;
+      animation: floatReverse 15s ease-in-out infinite;
+      width: 100px;
+      height: 100px;
+    }
+    .icon-3 {
+      top: 40%;
+      right: 15%;
+      animation: float 10s ease-in-out infinite;
+      width: 60px;
+      height: 60px;
+    }
+    .icon-4 {
+      bottom: 15%;
+      left: 12%;
+      animation: floatReverse 18s ease-in-out infinite;
+      width: 70px;
+      height: 70px;
+    }
+    
+    /* Main content should be above background */
+    main {
+      position: relative;
+      z-index: 1;
+    }
+    
     /* Blinking animation for mic icon during listening */
     .blink-mic {
       animation: blinkIcon 1s infinite;
@@ -100,7 +147,15 @@
     }
   </style>
 </head>
-<body class="animated-bg antialiased">
+<body class="bg-blue-50 antialiased">
+
+<!-- Floating background icons - hidden by default, shown when listening -->
+<div id="backgroundIcons" class="background-icons hidden">
+  <i data-lucide="book-open" class="bg-icon icon-1"></i>
+  <i data-lucide="graduation-cap" class="bg-icon icon-2"></i>
+  <i data-lucide="atom" class="bg-icon icon-3"></i>
+  <i data-lucide="cpu" class="bg-icon icon-4"></i>
+</div>
 
 <!-- MAIN CONTENT -->
 <main class="max-w-6xl mx-auto px-4 py-12">
@@ -125,7 +180,7 @@
     </p>
     
     <!-- Ask AI Button - orange -->
-    <button id="askBtn" class="w-24 h-24 rounded-full bg-blue-600 mic-glow flex items-center justify-center hover:bg-orange-700 transition-all duration-300 mb-8">
+    <button id="askBtn" class="w-24 h-24 rounded-full bg-orange-600 mic-glow flex items-center justify-center hover:bg-orange-700 transition-all duration-300 mb-8">
       <i data-lucide="mic" class="w-10 h-10 text-white"></i>
     </button>
     
@@ -258,6 +313,7 @@
     const $newQuestionBtnContainer = $('#newQuestionBtnContainer');
     const $askBtn = $('#askBtn');
     const $popularContainer = $('#popularQuestionsContainer');
+    const $backgroundIcons = $('#backgroundIcons');
 
     // Populate popular questions container
     popularQuestions.forEach((question) => {
@@ -353,6 +409,9 @@
       $listeningView.removeClass('hidden').css('display', 'flex');
       $timerContainer.removeClass('hidden');
       $transcriptSpan.text(questionText);
+      
+      // Show background icons when listening starts
+      $backgroundIcons.removeClass('hidden');
       
       // Make mic icon blink during listening
       $micIconContainer.removeClass('static-mic').addClass('blink-mic');
@@ -486,6 +545,10 @@
       $listeningView.addClass('hidden').hide();
       $transcriptSpan.text('');
       $timerContainer.addClass('hidden');
+      
+      // Hide background icons when returning to initial view
+      $backgroundIcons.addClass('hidden');
+      
       $micIconContainer.removeClass('blink-mic static-mic').addClass('blink-mic'); // Reset to blink class
       $aiLoadingContainer.addClass('hidden');
       $answerContainer.addClass('hidden');
@@ -508,6 +571,7 @@
     // Initial hide of listening view
     $listeningView.hide().addClass('hidden');
     $newQuestionBtnContainer.addClass('hidden');
+    $backgroundIcons.addClass('hidden');
 
     // Refresh icons
     refreshIcons();
