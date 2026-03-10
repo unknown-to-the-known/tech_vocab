@@ -36,7 +36,30 @@ $response = curl_exec($ch);
 
 curl_close($ch);
 
+// $result = json_decode($response, true);
+
+// echo $result['choices'][0]['message']['content'];
+
+
+
+
+
+
+
+
+
 $result = json_decode($response, true);
+
+if(isset($result['error'])){
+    echo "API Error: " . $result['error']['message'];
+    exit;
+}
+
+if(!isset($result['choices'][0]['message']['content'])){
+    echo "Unexpected response:";
+    print_r($result);
+    exit;
+}
 
 echo $result['choices'][0]['message']['content'];
 
