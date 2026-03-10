@@ -631,26 +631,26 @@
             let selectedFile = null;
             
             // Format file size
-            function formatFileSize(bytes) {
+            const formatFileSize = (bytes) => {
                 if (bytes === 0) return '0 Bytes';
                 const k = 1024;
                 const sizes = ['Bytes', 'KB', 'MB', 'GB'];
                 const i = Math.floor(Math.log(bytes) / Math.log(k));
                 return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-            }
+            };
             
             // Helper function to read file as Uint8Array
-            function readFileAsUint8Array(file) {
+            const readFileAsUint8Array = (file) => {
                 return new Promise((resolve, reject) => {
                     const reader = new FileReader();
                     reader.onload = () => resolve(new Uint8Array(reader.result));
                     reader.onerror = reject;
                     reader.readAsArrayBuffer(file);
                 });
-            }
+            };
             
             // Initialize FFmpeg
-            async function initFFmpeg() {
+            const initFFmpeg = async () => {
                 if (ffmpeg && ffmpeg.isLoaded()) {
                     return ffmpeg;
                 }
@@ -674,10 +674,10 @@
                     console.error('Error loading FFmpeg:', error);
                     throw new Error('Failed to load FFmpeg. Please refresh the page.');
                 }
-            }
+            };
             
             // Compress video using FFmpeg.wasm
-            async function compressVideo(file) {
+            const compressVideo = async (file) => {
                 try {
                     // Show compression modal
                     $('#compressionModal').addClass('active');
@@ -756,9 +756,9 @@
                     const baseName = fileName.substring(0, lastDot);
                     a.download = baseName + '_compressed.mp4';
                     
-                    document.body.appendChild(a);
+                    $('body').append(a);
                     a.click();
-                    document.body.removeChild(a);
+                    a.remove();
                     
                     // Clean up
                     setTimeout(() => {
@@ -791,18 +791,18 @@
                     $('.js-camera-placeholder, .js-mobile-camera-placeholder').css('border', '2px solid white');
                     lucide.createIcons();
                 }
-            }
+            };
             
             // Initialize webcam
-            function initWebcam() {
+            const initWebcam = () => {
                 if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
                     navigator.mediaDevices.getUserMedia({ video: true, audio: false })
-                        .then(function(stream) {
+                        .then((stream) => {
                             mediaStream = stream;
                             $('#desktopVideo')[0].srcObject = stream;
                             $('#mobileVideo')[0].srcObject = stream;
                         })
-                        .catch(function(error) {
+                        .catch((error) => {
                             console.log("Webcam error:", error);
                             $('.js-camera-placeholder, .js-mobile-camera-placeholder').html('<i data-lucide="video-off" class="w-8 h-8"></i><span class="text-sm font-medium mt-1">No Camera</span>');
                             lucide.createIcons();
@@ -811,35 +811,47 @@
                     $('.js-camera-placeholder, .js-mobile-camera-placeholder').html('<i data-lucide="video-off" class="w-8 h-8"></i><span class="text-sm font-medium mt-1">No Camera</span>');
                     lucide.createIcons();
                 }
-            }
+            };
             
-            function resetPlayButton() {
+            const resetPlayButton = () => {
                 $('.js-play-btn').removeClass('playing').html('<i data-lucide="volume-2" class="w-4 h-4"></i> Play');
                 lucide.createIcons();
-            }
+            };
             
-            function attachPlayButtonEvent() {
+            const attachPlayButtonEvent = () => {
                 $('.js-play-btn').off('click').on('click', function() {
                     if ($(this).hasClass('playing')) {
                         $(this).removeClass('playing').html('<i data-lucide="volume-2" class="w-4 h-4"></i> Play');
                     } else {
                         $(this).addClass('playing').html('<i data-lucide="pause" class="w-4 h-4"></i> Pause');
-                        setTimeout(() => { if ($('.js-play-btn').hasClass('playing')) resetPlayButton(); }, 10000);
+                        setTimeout(() => { 
+                            if ($('.js-play-btn').hasClass('playing')) {
+                                resetPlayButton(); 
+                            }
+                        }, 10000);
                     }
                     lucide.createIcons();
                 });
-            }
+            };
             
             // Help popup handlers
-            function handleHelpClick() { $('#helpPopup').addClass('active'); }
-            function closeHelpPopup() { $('#helpPopup').removeClass('active'); }
+            const handleHelpClick = () => $('#helpPopup').addClass('active');
+            const closeHelpPopup = () => $('#helpPopup').removeClass('active');
             
             $('#helpIcon, #mobileHelpIcon').on('click', handleHelpClick);
             $('#closeHelpPopup').on('click', closeHelpPopup);
             
-            $('#helpPopup').on('click', function(e) { if ($(e.target).is('#helpPopup')) closeHelpPopup(); });
+            $('#helpPopup').on('click', function(e) { 
+                if ($(e.target).is('#helpPopup')) {
+                    closeHelpPopup(); 
+                }
+            });
             
-            $(document).on('keydown', function(e) { if (e.key === 'Escape' && $('#helpPopup').hasClass('active')) closeHelpPopup(); });
+            $(document).on('keydown', function(e) { 
+                if (e.key === 'Escape' && $('#helpPopup').hasClass('active')) {
+                    closeHelpPopup(); 
+                }
+            });
             
             // Logo click handler
             $('#logoClick').on('click', function() {
@@ -891,26 +903,26 @@
             });
             
             // Drag and drop handlers
-            const dropArea = document.getElementById('fileDropArea');
+            const $dropArea = $('#fileDropArea');
             
-            dropArea.addEventListener('dragover', (e) => {
+            $dropArea.on('dragover', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                dropArea.classList.add('dragover');
+                $dropArea.addClass('dragover');
             });
             
-            dropArea.addEventListener('dragleave', (e) => {
+            $dropArea.on('dragleave', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                dropArea.classList.remove('dragover');
+                $dropArea.removeClass('dragover');
             });
             
-            dropArea.addEventListener('drop', (e) => {
+            $dropArea.on('drop', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                dropArea.classList.remove('dragover');
+                $dropArea.removeClass('dragover');
                 
-                const file = e.dataTransfer.files[0];
+                const file = e.originalEvent.dataTransfer.files[0];
                 if (file && file.type.startsWith('video/')) {
                     if (file.size > 200 * 1024 * 1024) {
                         alert('File too large. Please select a video under 200MB.');
