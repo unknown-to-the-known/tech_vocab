@@ -364,12 +364,17 @@
     const $voiceInputButton = $('#voiceInputButton');
     const $submitButton = $('#submitQuestion');
 
-    // Check for stored question from microphone page
-    const storedQuestion = localStorage.getItem('revisewell_question');
-    if (storedQuestion) {
-      localStorage.removeItem('revisewell_question');
+    // Get question from URL parameter if it exists
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlQuestion = urlParams.get('question');
+    
+    if (urlQuestion) {
+      // Remove the parameter from URL without refreshing
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, document.title, newUrl);
+      
       // First conversation - use voice with timer
-      startListeningWithQuestion(storedQuestion, true);
+      startListeningWithQuestion(urlQuestion, true);
     } else {
       // First conversation - start with voice recognition
       startSpeechRecognition();
