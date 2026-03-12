@@ -116,6 +116,13 @@
       animation-delay: 5s;
     }
 
+    /* Hide icons 5 and 6 on mobile */
+    @media (max-width: 768px) {
+      #icon5, #icon6 {
+        display: none;
+      }
+    }
+
     @keyframes floatAround {
       0% {
         transform: translate(0, 0) rotate(0deg) scale(1);
