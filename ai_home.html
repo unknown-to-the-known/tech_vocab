@@ -171,8 +171,9 @@
       animation-delay: 5s;
     }
 
-    /* Hide icons 5 and 6 on mobile */
+    /* Mobile styles - COMPLETELY RESPONSIVE */
     @media (max-width: 768px) {
+      /* Hide icons 5 and 6 on mobile */
       #icon5, #icon6 {
         display: none;
       }
@@ -201,12 +202,10 @@
         animation-duration: 35s;
         animation-delay: 0.5s;
       }
-    }
-
-    /* Mobile responsive - put rocket in green near microphone */
-    @media (max-width: 768px) {
+      
+      /* Mobile rocket visible */
       .mobile-rocket {
-        display: block;
+        display: block !important;
         position: absolute;
         color: #22c55e;
         width: 40px;
@@ -217,13 +216,13 @@
         pointer-events: none;
       }
       
-      /* Add gap between mic and Most people asked on mobile - ONLY MOBILE */
+      /* Add gap between mic and Most people asked on mobile */
       .mic-with-circles {
         margin-bottom: 80px !important;
         margin-top: 40px !important;
       }
       
-      /* INCREASE MICROPHONE BUTTON SIZE ON MOBILE ONLY */
+      /* INCREASE MICROPHONE BUTTON SIZE ON MOBILE */
       .mic-with-circles .mic-button {
         width: 128px;
         height: 128px;
@@ -249,7 +248,7 @@
         height: 4rem;
       }
       
-      /* Ensure proper centering on mobile */
+      /* Center everything properly on mobile */
       .content-wrapper {
         width: 100%;
         display: flex;
@@ -257,25 +256,32 @@
         align-items: center;
         padding-left: 16px;
         padding-right: 16px;
+        box-sizing: border-box;
       }
       
-      /* Center the popular questions container on mobile */
+      /* Center the popular questions container */
       #popularContainer {
         width: 100%;
         margin-left: auto;
         margin-right: auto;
+        box-sizing: border-box;
+        max-width: 100%;
       }
       
-      /* Center the scrollable row content */
+      /* Center the scrollable row content but keep scrolling capability */
       .scrollable-row {
         justify-content: flex-start;
         width: 100%;
+        padding-left: 4px;
+        padding-right: 4px;
+        box-sizing: border-box;
       }
       
-      /* Center the title section on mobile */
+      /* Center the title section */
       .title-section {
         width: 100%;
         justify-content: center;
+        margin-bottom: 30px;
       }
       
       /* Ensure text is centered */
@@ -288,21 +294,24 @@
       p.text-sm {
         margin-left: auto;
         margin-right: auto;
+        max-width: 90%;
       }
       
-      /* FIX: Make footer scrollable on mobile - NOT FIXED - with no empty space */
+      /* Make footer scrollable on mobile - NOT FIXED */
       .footer-text {
         position: relative !important;
         bottom: auto !important;
         left: auto !important;
         right: auto !important;
-        margin-top: 30px;
+        margin-top: 40px !important;
         margin-bottom: 0 !important;
-        padding: 15px 4px 15px !important;
+        padding: 20px 16px 20px !important;
         border-top: 1px solid rgba(107, 114, 128, 0.2);
+        width: 100%;
+        box-sizing: border-box;
       }
       
-      /* Remove any extra space from body */
+      /* Body takes full height with flex column */
       body {
         margin: 0;
         padding: 0;
@@ -311,9 +320,56 @@
         flex-direction: column;
       }
       
-      /* Make main content take available space */
+      /* Main content takes available space */
       main {
         flex: 1 0 auto;
+        padding-top: 20px;
+        padding-bottom: 20px;
+        width: 100%;
+        box-sizing: border-box;
+      }
+      
+      /* Ensure all containers respect box sizing */
+      * {
+        box-sizing: border-box;
+      }
+      
+      /* Make the main container full width */
+      .max-w-6xl {
+        max-width: 100%;
+      }
+      
+      /* Adjust padding for main */
+      main.px-4 {
+        padding-left: 0;
+        padding-right: 0;
+      }
+      
+      /* Fix the title image size */
+      .title-section img {
+        width: 48px;
+        height: 48px;
+      }
+      
+      /* Adjust heading size */
+      .title-section h1 {
+        font-size: 2rem;
+      }
+      
+      /* Make sure the popular questions container doesn't overflow */
+      #popularContainer .scrollable-row {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+      
+      /* Add initial left padding for first item */
+      .scrollable-row > :first-child {
+        margin-left: 4px;
+      }
+      
+      /* Add right padding for last item */
+      .scrollable-row > :last-child {
+        margin-right: 4px;
       }
     }
 
@@ -321,6 +377,11 @@
     @media (min-width: 769px) {
       .desktop-margin {
         margin-top: 20px !important;
+      }
+      
+      /* Hide mobile rocket on desktop */
+      .mobile-rocket {
+        display: none !important;
       }
     }
 
@@ -372,12 +433,18 @@
       z-index: 20;
       background-color: transparent;
       padding: 4px;
-      position: fixed;
-      bottom: 10px;
-      left: 0;
-      right: 0;
     }
-
+    
+    /* Desktop footer fixed */
+    @media (min-width: 769px) {
+      .footer-text {
+        position: fixed;
+        bottom: 10px;
+        left: 0;
+        right: 0;
+      }
+    }
+    
     /* Move content down */
     .content-wrapper {
       margin-top: 40px;
@@ -385,7 +452,7 @@
     
     /* Increased gap between Revisewell AI and Ask your question */
     .title-section {
-      margin-bottom: 30px; /* Increased from default */
+      margin-bottom: 30px;
     }
     
     /* Desktop styles remain exactly as they were */
@@ -399,15 +466,7 @@
       
       #popularContainer {
         width: 100%;
-        max-width: 64rem; /* matches max-w-4xl */
-      }
-      
-      /* Desktop footer stays fixed */
-      .footer-text {
-        position: fixed;
-        bottom: 10px;
-        left: 0;
-        right: 0;
+        max-width: 64rem;
       }
     }
   </style>
