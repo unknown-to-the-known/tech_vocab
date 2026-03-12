@@ -17,26 +17,6 @@
     main {
       position: relative;
       z-index: 10;
-      display: flex;
-      align-items: center;
-      min-height: 100vh;
-    }
-    
-    /* Mobile only - center content vertically */
-    @media (max-width: 768px) {
-      main {
-        min-height: 100vh;
-        display: flex;
-        align-items: center;
-        padding-top: 0;
-        padding-bottom: 0;
-      }
-      
-      .content-wrapper {
-        width: 100%;
-        margin-top: 0;
-        padding: 20px 0;
-      }
     }
     
     /* Mic button with circles animation - removed shadow, added circles */
@@ -305,7 +285,7 @@
       padding: 4px;
     }
 
-    /* Move content down - desktop only */
+    /* Move content down */
     .content-wrapper {
       margin-top: 40px;
     }
