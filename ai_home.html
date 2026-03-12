@@ -248,6 +248,47 @@
         width: 4rem;
         height: 4rem;
       }
+      
+      /* Ensure proper centering on mobile */
+      .content-wrapper {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding-left: 16px;
+        padding-right: 16px;
+      }
+      
+      /* Center the popular questions container on mobile */
+      #popularContainer {
+        width: 100%;
+        margin-left: auto;
+        margin-right: auto;
+      }
+      
+      /* Center the scrollable row content */
+      .scrollable-row {
+        justify-content: flex-start;
+        width: 100%;
+      }
+      
+      /* Center the title section on mobile */
+      .title-section {
+        width: 100%;
+        justify-content: center;
+      }
+      
+      /* Ensure text is centered */
+      .text-center {
+        text-align: center;
+        width: 100%;
+      }
+      
+      /* Keep max-width for paragraph but ensure centering */
+      p.text-sm {
+        margin-left: auto;
+        margin-right: auto;
+      }
     }
 
     /* Desktop responsive - move Most people asked lil bit down */
@@ -319,6 +360,21 @@
     /* Increased gap between Revisewell AI and Ask your question */
     .title-section {
       margin-bottom: 30px; /* Increased from default */
+    }
+    
+    /* Desktop styles remain exactly as they were */
+    @media (min-width: 769px) {
+      .content-wrapper {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        width: 100%;
+      }
+      
+      #popularContainer {
+        width: 100%;
+        max-width: 64rem; /* matches max-w-4xl */
+      }
     }
   </style>
 </head>
