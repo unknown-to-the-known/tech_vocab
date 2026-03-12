@@ -19,13 +19,14 @@
       z-index: 10;
     }
     
-    /* Mic button glow effect - orange */
+    /* Mic button glow effect - orange with premium subtle pulse */
     .mic-glow {
       box-shadow: 0 0 20px rgba(234, 88, 12, 0.5);
-      transition: box-shadow 0.3s ease;
+      transition: box-shadow 0.3s ease, transform 0.2s ease;
     }
     .mic-glow:hover {
       box-shadow: 0 0 30px rgba(234, 88, 12, 0.8);
+      transform: scale(1.02);
     }
 
     /* Scrollable container without scrollbar */
@@ -45,7 +46,7 @@
       display: none;  /* Chrome, Safari, Opera */
     }
 
-    /* Background movable icons - auto moving */
+    /* Background movable icons - auto moving with premium smoothness */
     .background-icons {
       position: fixed;
       top: 0;
@@ -61,17 +62,17 @@
       position: absolute;
       width: 56px;
       height: 56px;
-      opacity: 0.25;
+      opacity: 0.2; /* Slightly more subtle */
       pointer-events: none;
       z-index: 5;
-      filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1));
-      animation: floatAround 20s infinite ease-in-out;
+      filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.08));
+      animation: floatAround 20s infinite cubic-bezier(0.4, 0, 0.2, 1); /* Premium easing */
     }
 
-    /* Three colors: orange, blue, green */
-    .moving-icon.orange { color: #f97316; }  /* orange-500 */
-    .moving-icon.blue { color: #3b82f6; }    /* blue-500 */
-    .moving-icon.green { color: #22c55e; }    /* green-500 */
+    /* Three colors: orange, blue, green - kept exactly the same */
+    .moving-icon.orange { color: #f97316; }
+    .moving-icon.blue { color: #3b82f6; }
+    .moving-icon.green { color: #22c55e; }
 
     /* Different animation speeds and delays for each icon */
     #icon1 {
@@ -144,7 +145,16 @@
       }
     }
 
-    /* Footer text */
+    /* Premium subtle hover effect for question chips */
+    .question-chip {
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .question-chip:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 8px rgba(249, 115, 22, 0.15);
+    }
+
+    /* Footer text - kept exactly the same */
     .footer-text {
       position: fixed;
       bottom: 10px;
@@ -165,7 +175,12 @@
     
     /* Increased gap between Revisewell AI and Ask your question */
     .title-section {
-      margin-bottom: 30px; /* Increased from default */
+      margin-bottom: 30px;
+    }
+
+    /* Premium smooth transitions for all interactive elements */
+    button, .cursor-pointer {
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     }
   </style>
 </head>
@@ -190,7 +205,7 @@
 <main class="max-w-6xl mx-auto px-4 py-12 relative z-10">
   <!-- Added content-wrapper class to move content down -->
   <div id="initialView" class="flex flex-col items-center fade-in content-wrapper">
-    <!-- Title with logo - orange and green with Nunito font - added title-section class for increased bottom margin -->
+    <!-- Title with logo - orange and green with Nunito font -->
     <div class="flex items-center justify-center gap-2 mb-8 title-section">
       <img src="revisewell_logo.png" alt="ReviseWell Logo" class="w-12 h-12 object-contain">
       <h1 class="text-3xl font-bold">
@@ -209,14 +224,14 @@
     </p>
     
     <!-- Ask AI Button - orange -->
-    <button id="askBtn" class="w-24 h-24 rounded-full bg-orange-600 mic-glow flex items-center justify-center hover:bg-orange-700 transition-all duration-300 mb-8">
+    <button id="askBtn" class="w-24 h-24 rounded-full bg-orange-600 mic-glow flex items-center justify-center hover:bg-orange-700 mb-8">
       <i data-lucide="mic" class="w-10 h-10 text-white"></i>
     </button>
     
     <!-- Popular Questions Container - white container -->
     <div id="popularContainer" class="w-full max-w-4xl bg-white/90 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-gray-100">
       <h3 class="text-sm font-medium text-gray-700 mb-4 text-center">Most people asked: <i data-lucide="message-square" class="inline w-4 h-4 ml-1 text-orange-500"></i></h3>
-      <!-- Changed flex flex-wrap to scrollable-row for horizontal scrolling without scrollbar -->
+      <!-- Scrollable row for questions -->
       <div class="scrollable-row" id="popularQuestionsContainer">
         <!-- will be populated by JavaScript -->
       </div>
@@ -240,20 +255,20 @@
     "What is the theory of relativity?"
   ];
 
-  // Populate popular questions container
+  // Populate popular questions container with premium chip class
   const container = document.getElementById('popularQuestionsContainer');
   popularQuestions.forEach((question) => {
     const btn = document.createElement('div');
-    btn.className = 'bg-orange-50 rounded-lg px-3 py-1.5 border border-orange-200 text-gray-700 text-xs hover:bg-orange-100 cursor-pointer transition-colors shadow-sm flex-shrink-0';
+    btn.className = 'bg-orange-50 rounded-lg px-3 py-1.5 border border-orange-200 text-gray-700 text-xs hover:bg-orange-100 cursor-pointer shadow-sm flex-shrink-0 question-chip';
     btn.textContent = question;
     btn.onclick = function() {
-      // Pass question via URL parameter instead of localStorage
+      // Pass question via URL parameter
       window.location.href = 'ai.html?question=' + encodeURIComponent(question);
     };
     container.appendChild(btn);
   });
 
-  // Mic button click - redirect to chat page without any stored data
+  // Mic button click - redirect to chat page
   document.getElementById('askBtn').addEventListener('click', function() {
     window.location.href = 'ai.html';
   });
