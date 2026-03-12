@@ -151,9 +151,14 @@
       padding: 4px;
     }
 
-    /* Move content down - added margin-top to the main content */
+    /* Move content down */
     .content-wrapper {
       margin-top: 40px;
+    }
+    
+    /* Increased gap between Revisewell AI and Ask your question */
+    .title-section {
+      margin-bottom: 30px; /* Increased from default */
     }
   </style>
 </head>
@@ -178,8 +183,8 @@
 <main class="max-w-6xl mx-auto px-4 py-12 relative z-10">
   <!-- Added content-wrapper class to move content down -->
   <div id="initialView" class="flex flex-col items-center fade-in content-wrapper">
-    <!-- Title with logo - orange and green with Nunito font -->
-    <div class="flex items-center justify-center gap-2 mb-3">
+    <!-- Title with logo - orange and green with Nunito font - added title-section class for increased bottom margin -->
+    <div class="flex items-center justify-center gap-2 mb-3 title-section">
       <img src="revisewell_logo.png" alt="ReviseWell Logo" class="w-12 h-12 object-contain">
       <h1 class="text-3xl font-bold">
         <span class="text-orange-600">Revisewell</span><span class="text-green-600"> AI</span>
