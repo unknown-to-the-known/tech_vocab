@@ -17,6 +17,7 @@
     main {
       position: relative;
       z-index: 10;
+      flex: 1;
     }
     
     /* Mic button with circles animation - removed shadow, added circles */
@@ -338,18 +339,24 @@
       }
     }
 
-    /* Footer text */
+    /* Footer text - NOW SCROLLABLE (not fixed) */
     .footer-text {
-      /* position: fixed; */
-      bottom: 10px;
-      left: 0;
-      right: 0;
       text-align: center;
       font-size: 0.7rem;
       color: #6b7280;
       z-index: 20;
       background-color: transparent;
-      padding: 4px;
+      padding: 20px 4px 30px;
+      margin-top: 40px;
+      border-top: 1px solid rgba(107, 114, 128, 0.2);
+      width: 100%;
+      max-width: 800px;
+      margin-left: auto;
+      margin-right: auto;
+      position: relative;
+      bottom: auto;
+      left: auto;
+      right: auto;
     }
 
     /* Move content down */
@@ -376,9 +383,16 @@
         max-width: 64rem; /* matches max-w-4xl */
       }
     }
+
+    /* Make body flex column to push footer to bottom */
+    body {
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
   </style>
 </head>
-<body class="bg-blue-50 antialiased relative min-h-screen">
+<body class="bg-blue-50 antialiased">
 
 <!-- Background auto-moving icons - exactly 6 icons scattered all around -->
 <div class="background-icons" id="movableIconsContainer">
@@ -441,7 +455,7 @@
   </div>
 </main>
 
-<!-- Footer text - updated to new text -->
+<!-- Footer text - NOW SCROLLABLE (not fixed) -->
 <div class="footer-text">
   By using Revisewell AI, an AI chatbot, you agree to our Terms and Privacy Policy.
 </div>
