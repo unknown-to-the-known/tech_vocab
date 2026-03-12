@@ -19,13 +19,68 @@
       z-index: 10;
     }
     
-    /* Mic button glow effect - orange */
-    .mic-glow {
-      box-shadow: 0 0 20px rgba(59, 130, 246);
-      transition: box-shadow 0.3s ease;
+    /* Mic button with circles animation - removed shadow, added circles */
+    .mic-with-circles {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
-    .mic-glow:hover {
-      box-shadow: 0 0 30px rgba(234, 88, 12, 0.8);
+    
+    .mic-with-circles .mic-button {
+      position: relative;
+      z-index: 5;
+      width: 96px;
+      height: 96px;
+      border-radius: 50%;
+      background-color: #f97316;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background-color 0.3s ease;
+    }
+    
+    .mic-with-circles .mic-button:hover {
+      background-color: #ea580c;
+    }
+    
+    .circle {
+      position: absolute;
+      border-radius: 50%;
+      background-color: rgba(249, 115, 22, 0.3);
+      animation: pulse 2s infinite ease-out;
+      z-index: 1;
+    }
+    
+    .circle-1 {
+      width: 105px;
+      height: 105px;
+      animation-delay: 0s;
+    }
+    
+    .circle-2 {
+      width: 115px;
+      height: 115px;
+      animation-delay: 0.5s;
+      background-color: rgba(249, 115, 22, 0.2);
+    }
+    
+    .circle-3 {
+      width: 125px;
+      height: 125px;
+      animation-delay: 1s;
+      background-color: rgba(249, 115, 22, 0.1);
+    }
+    
+    @keyframes pulse {
+      0% {
+        transform: scale(0.8);
+        opacity: 0.8;
+      }
+      100% {
+        transform: scale(1.3);
+        opacity: 0;
+      }
     }
 
     /* Scrollable container without scrollbar */
@@ -226,10 +281,15 @@
       Click on the microphone icon below and speak your question clearly. I'll listen for 10 seconds and provide a helpful answer.
     </p>
     
-    <!-- Ask AI Button - orange -->
-    <button id="askBtn" class="w-24 h-24 rounded-full bg-orange-600 mic-glow flex items-center justify-center hover:bg-orange-700 transition-all duration-300 mb-8">
-      <i data-lucide="mic" class="w-10 h-10 text-white"></i>
-    </button>
+    <!-- Ask AI Button - with circles animation instead of shadow (smaller circles) -->
+    <div class="mic-with-circles mb-8">
+      <div class="circle circle-1"></div>
+      <div class="circle circle-2"></div>
+      <div class="circle circle-3"></div>
+      <button id="askBtn" class="mic-button">
+        <i data-lucide="mic" class="w-10 h-10 text-white"></i>
+      </button>
+    </div>
     
     <!-- Popular Questions Container - white container -->
     <div id="popularContainer" class="w-full max-w-4xl bg-white/90 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-gray-100">
