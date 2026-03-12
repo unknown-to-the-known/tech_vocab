@@ -144,6 +144,15 @@
       }
     }
 
+    /* Ensure logo and title are always visible - completely transparent background */
+    .title-section {
+      position: relative;
+      z-index: 30;
+      background-color: transparent; /* Fully transparent to blend with background */
+      padding: 10px 20px;
+      border-radius: 50px;
+    }
+
     /* Footer text */
     .footer-text {
       position: fixed;
@@ -190,7 +199,7 @@
 <main class="max-w-6xl mx-auto px-4 py-12 relative z-10">
   <!-- Added content-wrapper class to move content down -->
   <div id="initialView" class="flex flex-col items-center fade-in content-wrapper">
-    <!-- Title with logo - orange and green with Nunito font - added title-section class for increased bottom margin -->
+    <!-- Title with logo - completely transparent background to blend with page -->
     <div class="flex items-center justify-center gap-2 mb-8 title-section">
       <img src="revisewell_logo.png" alt="ReviseWell Logo" class="w-12 h-12 object-contain">
       <h1 class="text-3xl font-bold">
