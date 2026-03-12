@@ -150,6 +150,11 @@
       background-color: transparent;
       padding: 4px;
     }
+
+    /* Move content down - added margin-top to the main content */
+    .content-wrapper {
+      margin-top: 40px;
+    }
   </style>
 </head>
 <body class="bg-blue-50 antialiased relative min-h-screen">
@@ -171,8 +176,8 @@
 
 <!-- MAIN CONTENT -->
 <main class="max-w-6xl mx-auto px-4 py-12 relative z-10">
-  <!-- initial view -->
-  <div id="initialView" class="flex flex-col items-center fade-in">
+  <!-- Added content-wrapper class to move content down -->
+  <div id="initialView" class="flex flex-col items-center fade-in content-wrapper">
     <!-- Title with logo - orange and green with Nunito font -->
     <div class="flex items-center justify-center gap-2 mb-3">
       <img src="revisewell_logo.png" alt="ReviseWell Logo" class="w-12 h-12 object-contain">
