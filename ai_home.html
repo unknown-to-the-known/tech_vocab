@@ -203,17 +203,9 @@
         animation-delay: 0.5s;
       }
       
-      /* Mobile rocket visible */
+      /* Mobile rocket removed - no longer displayed */
       .mobile-rocket {
-        display: block !important;
-        position: absolute;
-        color: #22c55e;
-        width: 40px;
-        height: 40px;
-        right: 30px;
-        transform: translateY(-20px);
-        z-index: 15;
-        pointer-events: none;
+        display: none !important;
       }
       
       /* Add gap between mic and Most people asked on mobile */
@@ -488,7 +480,7 @@
   <i data-lucide="leaf" class="moving-icon green" id="icon6"></i>
 </div>
 
-<!-- Mobile rocket icon near microphone (only visible on mobile) -->
+<!-- Mobile rocket icon near microphone (hidden on all devices now) -->
 <i data-lucide="rocket" class="mobile-rocket" style="display: none;"></i>
 
 <!-- MAIN CONTENT -->
