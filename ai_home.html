@@ -461,6 +461,22 @@
         max-width: 64rem;
       }
     }
+
+    /* ===== SIMPLE PAGE LOAD ANIMATION ===== */
+    .fade-in {
+      animation: simpleFade 0.8s ease-in-out;
+    }
+    
+    @keyframes simpleFade {
+      0% {
+        opacity: 0;
+        transform: translateY(15px);
+      }
+      100% {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
   </style>
 </head>
 <body class="bg-blue-50 antialiased relative min-h-screen">
@@ -485,8 +501,8 @@
 
 <!-- MAIN CONTENT -->
 <main class="max-w-6xl mx-auto px-4 py-12 relative z-10">
-  <!-- Added content-wrapper class to move content down -->
-  <div id="initialView" class="flex flex-col items-center fade-in content-wrapper">
+  <!-- Added content-wrapper class to move content down - WITH SIMPLE FADE ANIMATION -->
+  <div id="initialView" class="flex flex-col items-center content-wrapper fade-in">
     <!-- Title with logo - orange and green with Nunito font - added title-section class for increased bottom margin -->
     <div class="flex items-center justify-center gap-2 mb-8 title-section">
       <img src="revisewell_logo.png" alt="ReviseWell Logo" class="w-12 h-12 object-contain">
