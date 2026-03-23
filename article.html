@@ -9,8 +9,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
-    <!-- FFmpeg.wasm - Load with caution -->
-    <script src="https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js"></script>
+    <!-- FFmpeg.wasm with proper CDN -->
+    <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js"></script>
     
     <!-- Custom Styles -->
     <style>
@@ -656,11 +656,11 @@
                     });
                 };
                 
-                // Initialize FFmpeg with fallback CDN
+                // Initialize FFmpeg with CDN
                 const initFFmpeg = async function() {
                     // Check if FFmpeg is available
                     if (typeof FFmpeg === 'undefined') {
-                        throw new Error('FFmpeg library not loaded');
+                        throw new Error('FFmpeg library not loaded from CDN');
                     }
                     
                     if (ffmpeg && ffmpeg.isLoaded()) {
@@ -670,9 +670,10 @@
                     try {
                         const { createFFmpeg } = FFmpeg;
                         
+                        // Use CDN for core
                         ffmpeg = createFFmpeg({ 
                             log: false,
-                            corePath: 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.11.6/dist/ffmpeg-core.js',
+                            corePath: 'https://unpkg.com/@ffmpeg/core@0.11.6/dist/ffmpeg-core.js',
                             progress: function({ ratio }) {
                                 const percent = Math.min(100, Math.round(ratio * 100));
                                 $('#compressionProgress').css('width', percent + '%');
@@ -680,39 +681,18 @@
                             }
                         });
                         
-                        $('#compressionMessage').text('Downloading video compressor...');
+                        $('#compressionMessage').text('Loading FFmpeg from CDN...');
                         await ffmpeg.load();
-                        console.log('FFmpeg loaded successfully');
+                        console.log('FFmpeg loaded successfully from CDN');
                         return ffmpeg;
                         
                     } catch (error) {
-                        console.error('Primary FFmpeg load failed, trying backup CDN...', error);
-                        
-                        try {
-                            const { createFFmpeg } = FFmpeg;
-                            
-                            ffmpeg = createFFmpeg({ 
-                                log: false,
-                                corePath: 'https://unpkg.com/@ffmpeg/core@0.11.6/dist/ffmpeg-core.js',
-                                progress: function({ ratio }) {
-                                    const percent = Math.min(100, Math.round(ratio * 100));
-                                    $('#compressionProgress').css('width', percent + '%');
-                                    $('#compressionMessage').text('Compressing... ' + percent + '%');
-                                }
-                            });
-                            
-                            await ffmpeg.load();
-                            console.log('FFmpeg loaded using backup CDN');
-                            return ffmpeg;
-                            
-                        } catch (backupError) {
-                            console.error('Backup FFmpeg load failed:', backupError);
-                            throw new Error('Failed to load video compressor. Please refresh the page.');
-                        }
+                        console.error('FFmpeg load failed:', error);
+                        throw new Error('Failed to load FFmpeg from CDN. Please check your internet connection.');
                     }
                 };
                 
-                // Compress video using FFmpeg.wasm - Improved version
+                // Compress video using FFmpeg.wasm
                 const compressVideo = async function(file) {
                     try {
                         // Show compression modal
@@ -725,7 +705,7 @@
                         $('#compressionDetails').html('');
                         
                         $('#compressionTitle').text('Preparing Video...');
-                        $('#compressionMessage').text('Initializing compressor...');
+                        $('#compressionMessage').text('Initializing FFmpeg...');
                         
                         // Initialize FFmpeg
                         const ffmpegInstance = await initFFmpeg();
@@ -936,7 +916,6 @@
                     if (file) {
                         console.log('File selected:', file.name, file.size);
                         
-                        // Changed from 200MB to 100MB for better performance
                         if (file.size > 100 * 1024 * 1024) {
                             alert('File too large. Please select a video under 100MB for best performance.');
                             $('#videoFileInput').val('');
@@ -979,7 +958,6 @@
                     
                     var file = e.originalEvent.dataTransfer.files[0];
                     if (file && file.type.startsWith('video/')) {
-                        // Changed from 200MB to 100MB for better performance
                         if (file.size > 100 * 1024 * 1024) {
                             alert('File too large. Please select a video under 100MB for best performance.');
                             return;
