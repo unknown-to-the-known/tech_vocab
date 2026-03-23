@@ -9,8 +9,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
-    <!-- FFmpeg.wasm - Using older stable version that works without SharedArrayBuffer requirements -->
-    <script src="https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.10.1/dist/ffmpeg.min.js"></script>
+    <!-- FFmpeg.wasm with proper CDN -->
+    <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js"></script>
     
     <!-- Custom Styles -->
     <style>
@@ -440,18 +440,6 @@
             background-color: #f9fafb;
             border-radius: 0.5rem;
         }
-        
-        /* Alert styles */
-        .alert-info {
-            background-color: #dbeafe;
-            border: 1px solid #3b82f6;
-            color: #1e40af;
-            padding: 0.75rem;
-            border-radius: 0.5rem;
-            margin: 1rem 0;
-            font-size: 0.875rem;
-            text-align: left;
-        }
     </style>
 </head>
 <body class="bg-gray-50 min-h-screen overflow-x-hidden">
@@ -489,18 +477,13 @@
         <div class="file-input-box">
             <i data-lucide="video" class="w-12 h-12 text-blue-500 mx-auto mb-3"></i>
             <h3 class="text-xl font-bold mb-2">Select Video</h3>
-            <p class="text-gray-600 mb-4">Choose a video file to compress (max 50MB for reliable performance)</p>
-            
-            <div class="alert-info">
-                <i data-lucide="info" class="w-4 h-4 inline mr-1"></i>
-                Note: First compression may take 20-30 seconds to load FFmpeg
-            </div>
+            <p class="text-gray-600 mb-4">Choose a video file to compress (max 100MB for best performance)</p>
             
             <div class="file-input-area" id="fileDropArea">
                 <input type="file" id="videoFileInput" accept="video/*" style="display: none;">
                 <i data-lucide="upload-cloud" class="w-8 h-8 text-blue-500 mx-auto mb-2"></i>
                 <p class="text-sm text-gray-600">Click to browse or drag and drop</p>
-                <p class="text-xs text-gray-400 mt-1">Supported: MP4, WebM</p>
+                <p class="text-xs text-gray-400 mt-1">Supported: MP4, MOV, AVI, WebM</p>
             </div>
             
             <div id="selectedFileInfo" class="file-info hidden">
@@ -673,11 +656,11 @@
                     });
                 };
                 
-                // Initialize FFmpeg with CDN - Using older stable version
+                // Initialize FFmpeg with CDN
                 const initFFmpeg = async function() {
                     // Check if FFmpeg is available
                     if (typeof FFmpeg === 'undefined') {
-                        throw new Error('FFmpeg library not loaded. Please refresh the page.');
+                        throw new Error('FFmpeg library not loaded from CDN');
                     }
                     
                     if (ffmpeg && ffmpeg.isLoaded()) {
@@ -687,78 +670,26 @@
                     try {
                         const { createFFmpeg } = FFmpeg;
                         
+                        // Use CDN for core
                         ffmpeg = createFFmpeg({ 
                             log: false,
-                            corePath: 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.10.0/dist/ffmpeg-core.js',
-                            mainName: 'ffmpeg-core.js',
+                            corePath: 'https://unpkg.com/@ffmpeg/core@0.11.6/dist/ffmpeg-core.js',
                             progress: function({ ratio }) {
                                 const percent = Math.min(100, Math.round(ratio * 100));
                                 $('#compressionProgress').css('width', percent + '%');
-                                if (percent < 100) {
-                                    $('#compressionMessage').text('Loading FFmpeg core... ' + percent + '%');
-                                }
+                                $('#compressionMessage').text('Compressing... ' + percent + '%');
                             }
                         });
                         
-                        $('#compressionMessage').text('Loading FFmpeg from CDN (first time may take 20-30 seconds)...');
+                        $('#compressionMessage').text('Loading FFmpeg from CDN...');
                         await ffmpeg.load();
-                        console.log('FFmpeg loaded successfully');
+                        console.log('FFmpeg loaded successfully from CDN');
                         return ffmpeg;
                         
                     } catch (error) {
                         console.error('FFmpeg load failed:', error);
-                        throw new Error('Unable to load FFmpeg. Please check your internet connection and refresh the page.');
+                        throw new Error('Failed to load FFmpeg from CDN. Please check your internet connection.');
                     }
-                };
-                
-                // Alternative compression using canvas (fallback)
-                const compressWithCanvas = async function(file) {
-                    return new Promise((resolve, reject) => {
-                        const video = document.createElement('video');
-                        const canvas = document.createElement('canvas');
-                        const ctx = canvas.getContext('2d');
-                        
-                        video.preload = 'auto';
-                        
-                        video.onloadedmetadata = function() {
-                            // Scale down to 720p max
-                            let width = video.videoWidth;
-                            let height = video.videoHeight;
-                            const maxWidth = 720;
-                            
-                            if (width > maxWidth) {
-                                height = (maxWidth * height) / width;
-                                width = maxWidth;
-                            }
-                            
-                            canvas.width = width;
-                            canvas.height = height;
-                            
-                            video.currentTime = 0;
-                        };
-                        
-                        video.onseeked = function() {
-                            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-                            canvas.toBlob(function(blob) {
-                                const compressedFile = new File([blob], 'compressed_preview.jpg', {
-                                    type: 'image/jpeg',
-                                    lastModified: Date.now()
-                                });
-                                resolve(compressedFile);
-                            }, 'image/jpeg', 0.8);
-                        };
-                        
-                        video.onerror = function() {
-                            reject(new Error('Could not load video for compression'));
-                        };
-                        
-                        const url = URL.createObjectURL(file);
-                        video.src = url;
-                        
-                        setTimeout(() => {
-                            URL.revokeObjectURL(url);
-                        }, 5000);
-                    });
                 };
                 
                 // Compress video using FFmpeg.wasm
@@ -770,39 +701,17 @@
                         $('#compressionSuccess').addClass('hidden');
                         $('#compressionError').addClass('hidden');
                         $('#compressionClose').addClass('hidden');
-                        $('#compressionProgress').css('width', '0%');
+                        $('#compressionProgress').css('width', '5%');
                         $('#compressionDetails').html('');
                         
-                        $('#compressionTitle').text('Loading FFmpeg...');
-                        $('#compressionMessage').text('Initializing video compressor...');
+                        $('#compressionTitle').text('Preparing Video...');
+                        $('#compressionMessage').text('Initializing FFmpeg...');
                         
                         // Initialize FFmpeg
-                        let ffmpegInstance;
-                        try {
-                            ffmpegInstance = await initFFmpeg();
-                        } catch (ffError) {
-                            // Fallback to canvas compression if FFmpeg fails
-                            $('#compressionMessage').text('FFmpeg unavailable, trying alternative compression...');
-                            const compressedImage = await compressWithCanvas(file);
-                            const url = URL.createObjectURL(compressedImage);
-                            const a = document.createElement('a');
-                            a.href = url;
-                            a.download = 'compressed_preview.jpg';
-                            document.body.appendChild(a);
-                            a.click();
-                            document.body.removeChild(a);
-                            
-                            $('#compressionTitle').text('Preview Created');
-                            $('#compressionMessage').text('Created compressed image preview (FFmpeg not available)');
-                            $('#compressionDetails').html('Original: ' + formatFileSize(file.size) + '<br>Preview: ' + formatFileSize(compressedImage.size));
-                            $('#compressionSpinner').addClass('hidden');
-                            $('#compressionSuccess').removeClass('hidden');
-                            $('#compressionClose').removeClass('hidden');
-                            return;
-                        }
+                        const ffmpegInstance = await initFFmpeg();
                         
-                        $('#compressionProgress').css('width', '10%');
-                        $('#compressionTitle').text('Reading Video...');
+                        $('#compressionProgress').css('width', '15%');
+                        $('#compressionTitle').text('Compressing Video...');
                         $('#compressionMessage').text('Reading video file...');
                         
                         // Read file
@@ -813,26 +722,25 @@
                         const outputName = 'output.mp4';
                         ffmpegInstance.FS('writeFile', inputName, fileData);
                         
-                        $('#compressionProgress').css('width', '30%');
-                        $('#compressionTitle').text('Compressing...');
-                        $('#compressionMessage').text('Compressing video with H.264...');
+                        $('#compressionProgress').css('width', '40%');
+                        $('#compressionMessage').text('Compressing video...');
                         
                         // Get original size
                         const originalSize = file.size;
                         
-                        // Run FFmpeg compression with optimized settings for browser
+                        // Run FFmpeg compression
                         await ffmpegInstance.run(
                             '-i', inputName,
-                            '-c:v', 'libx264',
-                            '-crf', '30',
-                            '-preset', 'ultrafast',
-                            '-c:a', 'aac',
-                            '-b:a', '96k',
+                            '-vcodec', 'libx264',
+                            '-crf', '28',
+                            '-preset', 'fast',
+                            '-acodec', 'aac',
+                            '-b:a', '128k',
                             '-movflags', '+faststart',
                             outputName
                         );
                         
-                        $('#compressionProgress').css('width', '90%');
+                        $('#compressionProgress').css('width', '95%');
                         $('#compressionMessage').text('Finalizing...');
                         
                         // Read compressed file
@@ -843,7 +751,6 @@
                         // Calculate compression ratio
                         const compressionRatio = ((originalSize - compressedSize) / originalSize * 100).toFixed(1);
                         
-                        $('#compressionProgress').css('width', '100%');
                         $('#compressionTitle').text('Compression Complete!');
                         $('#compressionMessage').text('Video successfully compressed');
                         $('#compressionDetails').html(
@@ -879,38 +786,24 @@
                             }
                         }, 200);
                         
+                        // Reset UI
+                        $('#dynamicBtn, #mobileDynamicBtn').prop('disabled', false).html('<i data-lucide="upload" class="w-4 h-4"></i> Upload Video');
+                        $('.js-camera-placeholder, .js-mobile-camera-placeholder').css('border', '2px solid white');
+                        if (typeof lucide !== 'undefined') {
+                            lucide.createIcons();
+                        }
+                        
                     } catch (error) {
                         console.error('Compression error:', error);
                         
-                        // Try fallback compression
-                        try {
-                            $('#compressionMessage').text('Trying alternative compression...');
-                            const compressedImage = await compressWithCanvas(file);
-                            const url = URL.createObjectURL(compressedImage);
-                            const a = document.createElement('a');
-                            a.href = url;
-                            a.download = 'compressed_preview.jpg';
-                            document.body.appendChild(a);
-                            a.click();
-                            document.body.removeChild(a);
-                            
-                            $('#compressionTitle').text('Preview Created');
-                            $('#compressionMessage').text('Created compressed image preview');
-                            $('#compressionDetails').html('Original: ' + formatFileSize(file.size) + '<br>Preview: ' + formatFileSize(compressedImage.size));
-                            $('#compressionSpinner').addClass('hidden');
-                            $('#compressionSuccess').removeClass('hidden');
-                            $('#compressionClose').removeClass('hidden');
-                            
-                        } catch (fallbackError) {
-                            $('#compressionTitle').text('Compression Failed');
-                            $('#compressionMessage').text('Unable to compress video. Please try a smaller file.');
-                            $('#compressionDetails').html('Error: ' + (error.message || 'Unknown error'));
-                            $('#compressionSpinner').addClass('hidden');
-                            $('#compressionSuccess').addClass('hidden');
-                            $('#compressionError').removeClass('hidden');
-                            $('#compressionClose').removeClass('hidden');
-                        }
-                    } finally {
+                        $('#compressionTitle').text('Compression Failed');
+                        $('#compressionMessage').text(error.message || 'Video compression failed');
+                        $('#compressionDetails').html('Please try a different video or refresh the page');
+                        $('#compressionSpinner').addClass('hidden');
+                        $('#compressionSuccess').addClass('hidden');
+                        $('#compressionError').removeClass('hidden');
+                        $('#compressionClose').removeClass('hidden');
+                        
                         $('#dynamicBtn, #mobileDynamicBtn').prop('disabled', false).html('<i data-lucide="upload" class="w-4 h-4"></i> Upload Video');
                         $('.js-camera-placeholder, .js-mobile-camera-placeholder').css('border', '2px solid white');
                         if (typeof lucide !== 'undefined') {
@@ -1023,8 +916,8 @@
                     if (file) {
                         console.log('File selected:', file.name, file.size);
                         
-                        if (file.size > 50 * 1024 * 1024) {
-                            alert('File too large. Please select a video under 50MB for reliable compression.');
+                        if (file.size > 100 * 1024 * 1024) {
+                            alert('File too large. Please select a video under 100MB for best performance.');
                             $('#videoFileInput').val('');
                             return;
                         }
@@ -1065,8 +958,8 @@
                     
                     var file = e.originalEvent.dataTransfer.files[0];
                     if (file && file.type.startsWith('video/')) {
-                        if (file.size > 50 * 1024 * 1024) {
-                            alert('File too large. Please select a video under 50MB for reliable compression.');
+                        if (file.size > 100 * 1024 * 1024) {
+                            alert('File too large. Please select a video under 100MB for best performance.');
                             return;
                         }
                         
