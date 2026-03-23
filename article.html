@@ -439,17 +439,6 @@
             border-radius: 0.5rem;
         }
         
-        .alert-info {
-            background-color: #dbeafe;
-            border: 1px solid #3b82f6;
-            color: #1e40af;
-            padding: 0.75rem;
-            border-radius: 0.5rem;
-            margin: 1rem 0;
-            font-size: 0.875rem;
-            text-align: left;
-        }
-        
         .quality-option {
             display: flex;
             gap: 0.5rem;
@@ -521,7 +510,7 @@
                 <input type="file" id="videoFileInput" accept="video/*" style="display: none;">
                 <i data-lucide="upload-cloud" class="w-8 h-8 text-blue-500 mx-auto mb-2"></i>
                 <p class="text-sm text-gray-600">Click to browse or drag and drop</p>
-                <p class="text-xs text-gray-400 mt-1">Supported: MP4, WebM (Max 100MB)</p>
+                <p class="text-xs text-gray-400 mt-1">Supported: MP4, WebM (Max 50MB)</p>
             </div>
             
             <div id="selectedFileInfo" class="file-info hidden">
@@ -672,9 +661,9 @@
                 let selectedQuality = 'good';
                 
                 const qualitySettings = {
-                    good: { width: 854, height: 480, bitrate: 1500000, label: 'Good Quality' },
-                    medium: { width: 640, height: 360, bitrate: 800000, label: 'Medium' },
-                    small: { width: 480, height: 270, bitrate: 400000, label: 'Small Size' }
+                    good: { maxWidth: 720, maxHeight: 480, bitrate: 1500000, crf: 23 },
+                    medium: { maxWidth: 640, maxHeight: 360, bitrate: 800000, crf: 28 },
+                    small: { maxWidth: 480, maxHeight: 270, bitrate: 400000, crf: 33 }
                 };
                 
                 const formatFileSize = function(bytes) {
@@ -685,8 +674,8 @@
                     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
                 };
                 
-                // Video compression using MediaRecorder API (works without FFmpeg)
-                const compressVideoWithMediaRecorder = async function(file, quality) {
+                // Reliable video compression using Canvas and MediaRecorder
+                const compressVideoReliably = async function(file, quality) {
                     return new Promise((resolve, reject) => {
                         const settings = qualitySettings[quality];
                         const video = document.createElement('video');
@@ -695,64 +684,143 @@
                         
                         video.preload = 'auto';
                         video.muted = true;
+                        video.crossOrigin = 'anonymous';
                         
-                        video.onloadedmetadata = () => {
-                            const aspectRatio = video.videoWidth / video.videoHeight;
-                            let targetWidth = Math.min(settings.width, video.videoWidth);
-                            let targetHeight = Math.round(targetWidth / aspectRatio);
+                        let animationId;
+                        let mediaRecorder;
+                        let chunks = [];
+                        let startTime;
+                        
+                        video.onloadeddata = () => {
+                            // Calculate dimensions
+                            let width = video.videoWidth;
+                            let height = video.videoHeight;
+                            const maxWidth = settings.maxWidth;
+                            const maxHeight = settings.maxHeight;
                             
-                            canvas.width = targetWidth;
-                            canvas.height = targetHeight;
+                            if (width > maxWidth) {
+                                height = (maxWidth * height) / width;
+                                width = maxWidth;
+                            }
+                            if (height > maxHeight) {
+                                width = (maxHeight * width) / height;
+                                height = maxHeight;
+                            }
                             
+                            canvas.width = Math.floor(width);
+                            canvas.height = Math.floor(height);
+                            
+                            // Create stream from canvas
                             const stream = canvas.captureStream(30);
-                            const mediaRecorder = new MediaRecorder(stream, {
-                                mimeType: 'video/webm;codecs=vp8',
+                            
+                            // Check supported MIME types
+                            let mimeType = '';
+                            const codecs = ['video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm'];
+                            for (let codec of codecs) {
+                                if (MediaRecorder.isTypeSupported(codec)) {
+                                    mimeType = codec;
+                                    break;
+                                }
+                            }
+                            
+                            if (!mimeType) {
+                                reject(new Error('No supported video codec found'));
+                                return;
+                            }
+                            
+                            // Create media recorder
+                            mediaRecorder = new MediaRecorder(stream, {
+                                mimeType: mimeType,
                                 videoBitsPerSecond: settings.bitrate
                             });
                             
-                            let chunks = [];
                             mediaRecorder.ondataavailable = (e) => {
-                                if (e.data.size > 0) chunks.push(e.data);
+                                if (e.data.size > 0) {
+                                    chunks.push(e.data);
+                                }
                             };
                             
                             mediaRecorder.onstop = () => {
-                                const blob = new Blob(chunks, { type: 'video/webm' });
+                                const blob = new Blob(chunks, { type: mimeType });
                                 resolve(blob);
                             };
                             
+                            // Start recording
+                            mediaRecorder.start(100);
+                            startTime = Date.now();
+                            
+                            // Play video and start capturing frames
                             video.play();
-                            mediaRecorder.start(1000);
                             
-                            let frameCount = 0;
-                            const totalFrames = Math.ceil(video.duration * 30);
-                            
-                            const processFrame = () => {
+                            const captureFrame = () => {
                                 if (video.paused || video.ended) {
-                                    if (video.ended) {
+                                    if (video.ended && mediaRecorder && mediaRecorder.state === 'recording') {
                                         mediaRecorder.stop();
                                     }
                                     return;
                                 }
                                 
+                                // Draw current frame to canvas
                                 ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-                                frameCount++;
                                 
+                                // Update progress
                                 const progress = (video.currentTime / video.duration) * 100;
                                 $('#compressionProgress').css('width', progress + '%');
                                 $('#compressionMessage').text(`Compressing... ${Math.floor(progress)}%`);
                                 
-                                requestAnimationFrame(processFrame);
+                                // Continue capturing
+                                requestAnimationFrame(captureFrame);
                             };
                             
-                            processFrame();
+                            video.onended = () => {
+                                if (mediaRecorder && mediaRecorder.state === 'recording') {
+                                    mediaRecorder.stop();
+                                }
+                            };
+                            
+                            captureFrame();
                         };
                         
-                        video.onerror = () => reject(new Error('Failed to load video'));
+                        video.onerror = (e) => {
+                            console.error('Video error:', e);
+                            reject(new Error('Failed to load video file'));
+                        };
                         
+                        // Load video
                         const url = URL.createObjectURL(file);
                         video.src = url;
                         
-                        setTimeout(() => URL.revokeObjectURL(url), 10000);
+                        // Cleanup after processing
+                        const cleanup = () => {
+                            if (animationId) cancelAnimationFrame(animationId);
+                            if (video) {
+                                video.pause();
+                                video.src = '';
+                                video.load();
+                            }
+                            URL.revokeObjectURL(url);
+                        };
+                        
+                        // Set timeout for safety
+                        const timeout = setTimeout(() => {
+                            cleanup();
+                            reject(new Error('Compression timed out'));
+                        }, 120000);
+                        
+                        // Clear timeout when done
+                        const originalResolve = resolve;
+                        resolve = (value) => {
+                            clearTimeout(timeout);
+                            cleanup();
+                            originalResolve(value);
+                        };
+                        
+                        const originalReject = reject;
+                        reject = (value) => {
+                            clearTimeout(timeout);
+                            cleanup();
+                            originalReject(value);
+                        };
                     });
                 };
                 
@@ -768,14 +836,14 @@
                         
                         const settings = qualitySettings[selectedQuality];
                         $('#compressionTitle').text('Compressing Video');
-                        $('#compressionMessage').text(`Using ${settings.label} settings...`);
-                        $('#compressionDetails').html(`Target: ${settings.width}x${settings.height}<br>Bitrate: ${(settings.bitrate / 1000000).toFixed(1)} Mbps`);
+                        $('#compressionMessage').text(`Preparing video...`);
+                        $('#compressionDetails').html(`Quality: ${selectedQuality.toUpperCase()}<br>Max Resolution: ${settings.maxWidth}x${settings.maxHeight}`);
                         
                         const originalSize = file.size;
                         const startTime = Date.now();
                         
-                        // Use MediaRecorder for compression
-                        const compressedBlob = await compressVideoWithMediaRecorder(file, selectedQuality);
+                        // Compress video
+                        const compressedBlob = await compressVideoReliably(file, selectedQuality);
                         
                         const endTime = Date.now();
                         const compressedSize = compressedBlob.size;
@@ -810,8 +878,8 @@
                     } catch (error) {
                         console.error('Compression error:', error);
                         $('#compressionTitle').text('Compression Failed');
-                        $('#compressionMessage').text('Unable to compress video');
-                        $('#compressionDetails').html('Please try a smaller video file or different format');
+                        $('#compressionMessage').text(error.message || 'Unable to compress video');
+                        $('#compressionDetails').html('Please try a smaller video file (under 20MB) or different format.<br>Error: ' + (error.message || 'Unknown error'));
                         $('#compressionSpinner').addClass('hidden');
                         $('#compressionError').removeClass('hidden');
                         $('#compressionClose').removeClass('hidden');
@@ -891,8 +959,8 @@
                 $('#videoFileInput').on('change', function(e) {
                     const file = this.files[0];
                     if (file) {
-                        if (file.size > 100 * 1024 * 1024) {
-                            alert('File too large. Please select a video under 100MB.');
+                        if (file.size > 50 * 1024 * 1024) {
+                            alert('File too large. Please select a video under 50MB for reliable compression.');
                             $('#videoFileInput').val('');
                             return;
                         }
@@ -918,8 +986,8 @@
                     $dropArea.removeClass('dragover');
                     const file = e.originalEvent.dataTransfer.files[0];
                     if (file && file.type.startsWith('video/')) {
-                        if (file.size > 100 * 1024 * 1024) {
-                            alert('File too large. Please select a video under 100MB.');
+                        if (file.size > 50 * 1024 * 1024) {
+                            alert('File too large. Please select a video under 50MB for reliable compression.');
                             return;
                         }
                         selectedFile = file;
