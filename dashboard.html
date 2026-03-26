@@ -29,8 +29,9 @@
             position: absolute;
             top: 100%;
             right: 0;
-            z-index: 50;
+            z-index: 9999;
             margin-top: 8px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
         }
         .selected-date {
             background-color: #3b82f6 !important;
@@ -63,6 +64,18 @@
         /* Only addition: card border color - nothing else changed */
         .article-card {
             border-color: #3b82f6 !important; /* blue border */
+        }
+
+        /* Ensure no unwanted scrollbar appears on body when popup opens */
+        body {
+            overflow-x: hidden;
+        }
+
+        /* Empty state styling */
+        .empty-state {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 3rem 1rem;
         }
     </style>
 </head>
@@ -119,13 +132,13 @@
                     Your Articles
                 </h2>
                 <div class="flex items-center gap-2 relative">
-                    <button class="calendar-btn border border-gray-300 rounded-lg px-3 py-1 text-sm flex items-center gap-1 hover:bg-gray-50">
+                    <button class="calendar-btn border border-gray-300 rounded-lg px-3 py-1 text-sm flex items-center gap-1 hover:bg-gray-50 transition-colors">
                         <i data-lucide="calendar" class="w-4 h-4"></i>
                         Filter
                     </button>
                     
-                    <!-- Calendar Popup -->
-                    <div class="calendar-popup bg-white border border-gray-300 rounded-lg shadow-lg p-4 w-80">
+                    <!-- Calendar Popup - Increased z-index to ensure it stays on top -->
+                    <div class="calendar-popup bg-white border border-gray-300 rounded-lg shadow-xl p-4 w-80" style="z-index: 10000;">
                         <!-- Year and Month Selection with Arrows -->
                         <div class="flex gap-2 mb-3">
                             <div class="w-1/2 flex items-center border border-gray-300 rounded-lg bg-white">
@@ -220,7 +233,8 @@
                 status: 'both',
                 start: null,                 // dd/mm/yyyy
                 end: null,
-                pickingStart: true
+                pickingStart: true,
+                isCalendarOpen: false        // Track calendar open state
             };
 
             let curYear = 2026, curMonth = 1; // 0 = Jan
@@ -258,6 +272,17 @@
                 if (s) return d >= s;
                 if (e) return d <= e;
                 return true;
+            };
+
+            // Count articles that match current filter
+            const getFilteredArticleCount = () => {
+                let count = 0;
+                articles.forEach(a => {
+                    if (F.status !== 'both' && (F.status === 'finished' ? !a.completed : a.completed)) return;
+                    if (!inRange(a.publishedDate)) return;
+                    count++;
+                });
+                return count;
             };
 
             // ---------- render ----------
@@ -310,15 +335,17 @@
                         </div>`;
                 });
                 $('.announcements-container').html(h);
-                lucide.createIcons(); // Re-run for any icons in announcements if needed
+                lucide.createIcons();
             };
 
             const renderArticles = () => {
                 let h = '';
+                let hasArticles = false;
+                
                 articles.forEach(a => {
                     if (F.status !== 'both' && (F.status === 'finished' ? !a.completed : a.completed)) return;
                     if (!inRange(a.publishedDate)) return;
-                    // Added article-card class for blue border
+                    hasArticles = true;
                     h += `<div class="article-card bg-white rounded-lg overflow-hidden border border-gray-200 hover:shadow-lg transition-shadow duration-200 cursor-pointer">
                             <div class="relative aspect-square bg-gray-100">
                                 <img src="${a.image}" alt="${a.title}" class="w-full h-full object-cover" />
@@ -337,8 +364,50 @@
                             </div>
                         </div>`;
                 });
+                
+                if (!hasArticles && (F.start || F.end)) {
+                    // Show empty state when no articles match the date filter
+                    h = `<div class="empty-state col-span-full py-12 text-center">
+                            <i data-lucide="calendar-x" class="w-16 h-16 mx-auto text-gray-300 mb-3"></i>
+                            <p class="text-gray-500 text-lg font-medium">No articles found for selected dates</p>
+                            <p class="text-gray-400 text-sm mt-1">Try selecting a different date range or clear the filter</p>
+                            <button class="clear-date-from-empty mt-4 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700 transition-colors inline-flex items-center gap-2">
+                                <i data-lucide="x-circle" class="w-4 h-4"></i>
+                                Clear Filter
+                            </button>
+                        </div>`;
+                } else if (!hasArticles && !F.start && !F.end && F.status !== 'both') {
+                    h = `<div class="empty-state col-span-full py-12 text-center">
+                            <i data-lucide="book-open" class="w-16 h-16 mx-auto text-gray-300 mb-3"></i>
+                            <p class="text-gray-500 text-lg font-medium">No ${F.status === 'finished' ? 'finished' : 'pending'} articles</p>
+                            <p class="text-gray-400 text-sm mt-1">Try changing the filter to see more articles</p>
+                            <button class="show-both-from-empty mt-4 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700 transition-colors inline-flex items-center gap-2">
+                                <i data-lucide="list" class="w-4 h-4"></i>
+                                Show All Articles
+                            </button>
+                        </div>`;
+                }
+                
                 $('.articles-container').html(h);
-                lucide.createIcons(); // Re-run for any icons in articles if needed
+                lucide.createIcons();
+                
+                // Bind clear button from empty state if present
+                $('.clear-date-from-empty').on('click', function() {
+                    F = { status: 'both', start: null, end: null, pickingStart: true, isCalendarOpen: false };
+                    $('.status-selection').addClass('hidden');
+                    renderCalendar();
+                    renderArticles();
+                    // Keep calendar closed after clearing
+                    $('.calendar-popup').hide();
+                    F.isCalendarOpen = false;
+                });
+                
+                $('.show-both-from-empty').on('click', function() {
+                    F.status = 'both';
+                    renderArticles();
+                    $('.calendar-popup').hide();
+                    F.isCalendarOpen = false;
+                });
             };
 
             // ---------- initial render ----------
@@ -349,12 +418,41 @@
             // ---------- event bindings ----------
             $('.calendar-btn').on('click', function(e) {
                 e.stopPropagation();
-                $('.calendar-popup').toggle();
+                e.preventDefault();
+                // Toggle popup - ensure it's visible and on top
+                if ($('.calendar-popup').is(':visible')) {
+                    $('.calendar-popup').hide();
+                    F.isCalendarOpen = false;
+                } else {
+                    $('.calendar-popup').show();
+                    F.isCalendarOpen = true;
+                    // Refresh calendar to ensure it's up to date
+                    renderCalendar();
+                    // Ensure popup stays visible and not hidden behind anything
+                    $('.calendar-popup').css({
+                        'z-index': 10000,
+                        'position': 'absolute',
+                        'display': 'block'
+                    });
+                }
             });
 
-            $(document).on('click', function() {
-                $('.calendar-popup').hide();
-                $('.status-selection').addClass('hidden');
+            $(document).on('click', function(e) {
+                // Only close if click is outside popup and not on the filter button
+                // AND if there are articles (if no articles, keep popup open so user can adjust dates)
+                const hasArticlesAfterFilter = getFilteredArticleCount() > 0;
+                const isClickOutside = !$(e.target).closest('.calendar-popup').length && !$(e.target).closest('.calendar-btn').length;
+                
+                if (isClickOutside) {
+                    // If there are no articles matching the filter, DON'T close the popup automatically
+                    // This allows user to select new dates without the popup disappearing
+                    if (hasArticlesAfterFilter || (!F.start && !F.end)) {
+                        $('.calendar-popup').hide();
+                        F.isCalendarOpen = false;
+                        $('.status-selection').addClass('hidden');
+                    }
+                    // If no articles match, keep popup open so user can adjust dates
+                }
             });
 
             $('.calendar-popup').on('click', e => e.stopPropagation());
@@ -372,36 +470,59 @@
             });
 
             $('.apply-dates').on('click', () => {
-                if (F.start && F.end) $('.status-selection').removeClass('hidden');
-                else alert('Please select both start and end dates');
+                if (F.start && F.end) {
+                    $('.status-selection').removeClass('hidden');
+                    renderArticles(); // Immediately apply filter and show results
+                    
+                    // After applying dates, check if any articles are found
+                    const articleCount = getFilteredArticleCount();
+                    if (articleCount === 0) {
+                        // No articles found - keep popup open so user can adjust dates
+                        $('.calendar-popup').show();
+                        F.isCalendarOpen = true;
+                    } else {
+                        // Articles found - close popup
+                        $('.calendar-popup').hide();
+                        F.isCalendarOpen = false;
+                        $('.status-selection').addClass('hidden');
+                    }
+                } else {
+                    alert('Please select both start and end dates');
+                }
             });
 
             $('.clear-date').on('click', () => {
-                F = { status: 'both', start: null, end: null, pickingStart: true };
+                F = { status: 'both', start: null, end: null, pickingStart: true, isCalendarOpen: false };
                 $('.status-selection').addClass('hidden');
                 renderCalendar();
                 renderArticles();
+                // Close popup after clearing
+                $('.calendar-popup').hide();
+                F.isCalendarOpen = false;
             });
 
             $('.show-finished-btn').on('click', () => {
                 F.status = 'finished';
-                $('.calendar-popup').hide();
-                $('.status-selection').addClass('hidden');
                 renderArticles();
+                $('.calendar-popup').hide();
+                F.isCalendarOpen = false;
+                $('.status-selection').addClass('hidden');
             });
 
             $('.show-pending-btn').on('click', () => {
                 F.status = 'pending';
-                $('.calendar-popup').hide();
-                $('.status-selection').addClass('hidden');
                 renderArticles();
+                $('.calendar-popup').hide();
+                F.isCalendarOpen = false;
+                $('.status-selection').addClass('hidden');
             });
 
             $('.show-both-btn').on('click', () => {
                 F.status = 'both';
-                $('.calendar-popup').hide();
-                $('.status-selection').addClass('hidden');
                 renderArticles();
+                $('.calendar-popup').hide();
+                F.isCalendarOpen = false;
+                $('.status-selection').addClass('hidden');
             });
 
             $('.js-logout-btn').on('click', function() { 
