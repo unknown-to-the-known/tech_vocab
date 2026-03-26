@@ -533,7 +533,7 @@
             }
         }
         
-        /* Small mobile styles */
+        /* Small mobile styles - UPDATED: original container max-height 120px */
         @media (max-width: 640px) {
             .results-grid {
                 grid-template-columns: 1fr;
@@ -544,7 +544,12 @@
                 height: 160px;
             }
             
-            .article-content,
+            .article-content {
+                max-height: 120px;
+                padding: 1rem;
+                overflow-y: auto;
+            }
+            
             .transcription-container {
                 max-height: 250px;
                 padding: 1rem;
@@ -697,7 +702,7 @@
             </div>
         </div>
 
-        <!-- Original (unchanged) -->
+        <!-- Original (unchanged) - scrollable with max-height 120px on mobile via CSS -->
         <div class="mb-6">
             <h2 class="section-title">Original</h2>
             <div class="article-content text-lg">
