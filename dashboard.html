@@ -208,9 +208,9 @@
                         <!-- Action Buttons -->
                         <div class="mt-4 flex justify-between">
                             <button class="clear-date text-xs text-gray-600 hover:text-gray-900 px-2 py-1">Clear</button>
-                            <div class="flex gap-2">
+                            <!-- <div class="flex gap-2">
                                 <button class="apply-dates text-xs bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700">Apply Dates</button>
-                            </div>
+                            </div> -->
                         </div>
                     </div>
                 </div>
@@ -390,7 +390,6 @@
                 
                 $('.articles-container').html(h);
                 lucide.createIcons();
-                
                 // Bind clear button from empty state if present
                 $('.clear-date-from-empty').on('click', function() {
                     F = { status: 'both', start: null, end: null, pickingStart: true, isCalendarOpen: false };
