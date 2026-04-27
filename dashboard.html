@@ -40,11 +40,19 @@
         .in-range {
             background-color: #dbeafe !important;
         }
-        .announcements-container {
+        .announcements-wrapper {
             width: 100%;
+            overflow: hidden;
+            position: relative;
+        }
+        .announcements-container {
+            display: flex;
+            gap: 16px;
+            width: fit-content;
+            will-change: transform;
         }
         .announcement-card {
-            width: calc(90% - 16px);
+            width: calc(90vw - 16px);
             max-width: 500px;
             flex-shrink: 0;
         }
@@ -119,8 +127,8 @@
                 <i data-lucide="megaphone" class="w-6 h-6"></i>
                 Announcements
             </h2>
-            <div class="w-full">
-                <div class="announcements-container flex gap-4 overflow-x-auto pb-4 scrollbar-hide snap-x snap-mandatory"></div>
+            <div class="announcements-wrapper">
+                <div class="announcements-container pb-4"></div>
             </div>
         </section>
 
@@ -285,6 +293,67 @@
                 return count;
             };
 
+            // ---------- Infinite Scroll Animation ----------
+            let scrollAnimation = null;
+            let currentPosition = 0;
+            let isPaused = false;
+            let totalWidth = 0;
+            let cardWidths = [];
+
+            const initInfiniteScroll = () => {
+                // Clear any existing animation
+                if (scrollAnimation) {
+                    cancelAnimationFrame(scrollAnimation);
+                }
+
+                const $container = $('.announcements-container');
+                const $wrapper = $('.announcements-wrapper');
+                
+                // Reset position
+                currentPosition = 0;
+                $container.css('transform', 'translateX(0)');
+                
+                // Calculate total width of one set of cards
+                totalWidth = 0;
+                cardWidths = [];
+                const $cards = $container.find('.announcement-card');
+                
+                $cards.each(function() {
+                    const width = $(this).outerWidth(true);
+                    cardWidths.push(width);
+                    totalWidth += width;
+                });
+                
+                // Only start if there's content to scroll
+                if (totalWidth === 0) return;
+                
+                const SPEED = 0.5; // Pixels per frame - smooth and slow
+                
+                const animate = () => {
+                    if (!isPaused) {
+                        currentPosition -= SPEED;
+                        
+                        // When we've scrolled past the first set, seamlessly reset
+                        if (currentPosition <= -totalWidth) {
+                            currentPosition += totalWidth;
+                        }
+                        
+                        $container.css('transform', `translateX(${currentPosition}px)`);
+                    }
+                    
+                    scrollAnimation = requestAnimationFrame(animate);
+                };
+                
+                // Pause on hover
+                $wrapper.off('mouseenter mouseleave').on('mouseenter', function() {
+                    isPaused = true;
+                }).on('mouseleave', function() {
+                    isPaused = false;
+                });
+                
+                scrollAnimation = requestAnimationFrame(animate);
+            };
+
             // ---------- render ----------
             const renderCalendar = () => {
                 let first = new Date(curYear, curMonth, 1), last = new Date(curYear, curMonth+1, 0);
@@ -323,19 +392,25 @@
 
             const renderAnnounce = () => {
                 let h = '';
-                announcements.forEach(a => {
-                    h += `<div class="snap-start announcement-card">
-                            <div class="relative h-32 rounded-lg overflow-hidden bg-gradient-to-br ${a.color}">
-                                <img src="${a.image}" alt="${a.title}" class="w-full h-full object-cover opacity-30" />
-                                <div class="absolute inset-0 p-4 flex flex-col justify-end">
-                                    <h3 class="text-white text-base font-semibold mb-1 drop-shadow-lg">${a.title}</h3>
-                                    <p class="text-white text-xs drop-shadow-lg line-clamp-2">${a.description}</p>
+                // Create 3 sets of cards for ultra-smooth infinite scroll
+                for (let set = 0; set < 3; set++) {
+                    announcements.forEach(a => {
+                        h += `<div class="announcement-card">
+                                <div class="relative h-32 rounded-lg overflow-hidden bg-gradient-to-br ${a.color}">
+                                    <img src="${a.image}" alt="${a.title}" class="w-full h-full object-cover opacity-30" />
+                                    <div class="absolute inset-0 p-4 flex flex-col justify-end">
+                                        <h3 class="text-white text-base font-semibold mb-1 drop-shadow-lg">${a.title}</h3>
+                                        <p class="text-white text-xs drop-shadow-lg line-clamp-2">${a.description}</p>
+                                    </div>
                                 </div>
-                            </div>
-                        </div>`;
-                });
+                            </div>`;
+                    });
+                }
                 $('.announcements-container').html(h);
                 lucide.createIcons();
+                
+                // Initialize smooth scroll after DOM update
+                setTimeout(initInfiniteScroll, 100);
             };
 
             const renderArticles = () => {
