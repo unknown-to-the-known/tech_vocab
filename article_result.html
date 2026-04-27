@@ -802,13 +802,13 @@
             }
             
             // Stop video
-            function stopVideo() {
-                playing = false;
-                clearTimeout(timer);
-                $playIcon.attr('data-lucide', 'play');
-                $playText.text('Play');
-                lucide.createIcons();
-            }
+function stopVideo() {
+    playing = false;
+    clearTimeout(timer);
+    $playIcon.attr('data-lucide', 'play');
+    $playText.text('Play');
+    lucide.createIcons();
+}
             
             // Play video
             function playVideo() {
@@ -827,17 +827,17 @@
             }
             
             // Play/Pause click
-            $playPause.on('click', function() {
-                if (playing) {
-                    stopVideo();
-                } else {
-                    playing = true;
-                    $playIcon.attr('data-lucide', 'pause');
-                    $playText.text('Pause');
-                    lucide.createIcons();
-                    playVideo();
-                }
-            });
+$playPause.on('click', function() {
+    if (playing) {
+        stopVideo();
+    } else {
+        playing = true;
+        $playIcon.attr('data-lucide', 'pause');
+        $playText.text('Pause');
+        lucide.createIcons();
+        playVideo();
+    }
+});
             
             // Speed button
             $speedBtn.on('click', function() {
