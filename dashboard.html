@@ -42,25 +42,6 @@
         }
         .announcements-container {
             width: 100%;
-            overflow: hidden;
-            position: relative;
-        }
-        .announcements-track {
-            display: flex;
-            gap: 16px;
-            width: max-content;
-            animation: scroll 30s linear infinite;
-        }
-        .announcements-track:hover {
-            animation-play-state: paused;
-        }
-        @keyframes scroll {
-            0% {
-                transform: translateX(0);
-            }
-            100% {
-                transform: translateX(-50%);
-            }
         }
         .announcement-card {
             width: calc(90% - 16px);
@@ -139,9 +120,7 @@
                 Announcements
             </h2>
             <div class="w-full">
-                <div class="announcements-container pb-4">
-                    <div class="announcements-track"></div>
-                </div>
+                <div class="announcements-container flex gap-4 overflow-x-auto pb-4 scrollbar-hide snap-x snap-mandatory"></div>
             </div>
         </section>
 
@@ -344,9 +323,8 @@
 
             const renderAnnounce = () => {
                 let h = '';
-                // Create original set of cards
                 announcements.forEach(a => {
-                    h += `<div class="announcement-card">
+                    h += `<div class="snap-start announcement-card">
                             <div class="relative h-32 rounded-lg overflow-hidden bg-gradient-to-br ${a.color}">
                                 <img src="${a.image}" alt="${a.title}" class="w-full h-full object-cover opacity-30" />
                                 <div class="absolute inset-0 p-4 flex flex-col justify-end">
@@ -356,9 +334,7 @@
                             </div>
                         </div>`;
                 });
-                // Duplicate for seamless infinite scroll
-                h += h; // This creates the duplicate set
-                $('.announcements-track').html(h);
+                $('.announcements-container').html(h);
                 lucide.createIcons();
             };
 
