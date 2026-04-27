@@ -45,7 +45,7 @@
             overflow: hidden;
             position: relative;
         }
-        .announcements-container {
+        .announcements-track {
             display: flex;
             gap: 16px;
             width: fit-content;
@@ -128,7 +128,7 @@
                 Announcements
             </h2>
             <div class="announcements-wrapper">
-                <div class="announcements-container pb-4"></div>
+                <div class="announcements-track pb-4"></div>
             </div>
         </section>
 
@@ -295,37 +295,34 @@
 
             // ---------- Infinite Scroll Animation ----------
             let scrollAnimation = null;
-            let currentPosition = 0;
             let isPaused = false;
-            let totalWidth = 0;
-            let cardWidths = [];
+            let totalSetWidth = 0;
 
             const initInfiniteScroll = () => {
                 // Clear any existing animation
                 if (scrollAnimation) {
                     cancelAnimationFrame(scrollAnimation);
+                    scrollAnimation = null;
                 }
 
-                const $container = $('.announcements-container');
+                const $track = $('.announcements-track');
                 const $wrapper = $('.announcements-wrapper');
                 
-                // Reset position
-                currentPosition = 0;
-                $container.css('transform', 'translateX(0)');
+                // Get the cards and calculate one full set width
+                const $cards = $track.find('.announcement-card');
+                if ($cards.length === 0) return;
                 
-                // Calculate total width of one set of cards
-                totalWidth = 0;
-                cardWidths = [];
-                const $cards = $container.find('.announcement-card');
+                const originalCount = $cards.length / 2; // Since we have 2 sets
+                totalSetWidth = 0;
                 
-                $cards.each(function() {
-                    const width = $(this).outerWidth(true);
-                    cardWidths.push(width);
-                    totalWidth += width;
+                // Calculate width of one complete set
+                $cards.slice(0, originalCount).each(function() {
+                    totalSetWidth += $(this).outerWidth(true);
                 });
                 
-                // Only start if there's content to scroll
-                if (totalWidth === 0) return;
+                // Reset position
+                $track.css('transform', 'translateX(0)');
+                let currentPosition = 0;
                 
                 const SPEED = 0.5; // Pixels per frame - smooth and slow
                 
@@ -333,12 +330,12 @@
                     if (!isPaused) {
                         currentPosition -= SPEED;
                         
-                        // When we've scrolled past the first set, seamlessly reset
-                        if (currentPosition <= -totalWidth) {
-                            currentPosition += totalWidth;
+                        // When first set is completely off-screen, seamlessly jump back
+                        if (currentPosition <= -totalSetWidth) {
+                            currentPosition += totalSetWidth;
                         }
                         
-                        $container.css('transform', `translateX(${currentPosition}px)`);
+                        $track.css('transform', `translateX(${currentPosition}px)`);
                     }
                     
                     scrollAnimation = requestAnimationFrame(animate);
@@ -392,8 +389,8 @@
 
             const renderAnnounce = () => {
                 let h = '';
-                // Create 3 sets of cards for ultra-smooth infinite scroll
-                for (let set = 0; set < 3; set++) {
+                // Create exactly 2 sets for perfect seamless loop
+                for (let set = 0; set < 2; set++) {
                     announcements.forEach(a => {
                         h += `<div class="announcement-card">
                                 <div class="relative h-32 rounded-lg overflow-hidden bg-gradient-to-br ${a.color}">
@@ -406,7 +403,7 @@
                             </div>`;
                     });
                 }
-                $('.announcements-container').html(h);
+                $('.announcements-track').html(h);
                 lucide.createIcons();
                 
                 // Initialize smooth scroll after DOM update
