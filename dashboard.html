@@ -42,6 +42,7 @@
         }
         .announcements-container {
             width: 100%;
+            overflow: hidden;
         }
         .announcement-card {
             width: calc(90% - 16px);
@@ -120,7 +121,7 @@
                 Announcements
             </h2>
             <div class="w-full">
-                <div class="announcements-container flex gap-4 overflow-x-auto pb-4 scrollbar-hide snap-x snap-mandatory"></div>
+                <div class="announcements-container flex gap-4 pb-4 scrollbar-hide"></div>
             </div>
         </section>
 
@@ -336,6 +337,59 @@
                 });
                 $('.announcements-container').html(h);
                 lucide.createIcons();
+                initInfiniteScroll();
+            };
+
+            const initInfiniteScroll = () => {
+                const container = $('.announcements-container');
+                const cards = container.find('.announcement-card');
+                
+                if (cards.length === 0) return;
+                
+                // Clone all cards for infinite scrolling
+                cards.each(function() {
+                    container.append($(this).clone());
+                });
+                
+                let scrollSpeed = 1; // pixels per frame
+                let scrollPosition = 0;
+                let animationId;
+                let isPaused = false;
+                
+                const scroll = () => {
+                    if (!isPaused) {
+                        scrollPosition += scrollSpeed;
+                        container.scrollLeft(scrollPosition);
+                        
+                        // Reset position when we've scrolled past the first set of cards
+                        const totalWidth = 0;
+                        let firstSetWidth = 0;
+                        cards.each(function() {
+                            firstSetWidth += $(this).outerWidth(true);
+                        });
+                        
+                        if (scrollPosition >= firstSetWidth) {
+                            scrollPosition = 0;
+                            container.scrollLeft(0);
+                        }
+                    }
+                    animationId = requestAnimationFrame(scroll);
+                };
+                
+                // Start scrolling
+                animationId = requestAnimationFrame(scroll);
+                
+                // Pause on hover
+                container.on('mouseenter', function() {
+                    isPaused = true;
+                });
+                
+                container.on('mouseleave', function() {
+                    isPaused = false;
+                });
+                
+                // Store animation ID for cleanup
+                container.data('animationId', animationId);
             };
 
             const renderArticles = () => {
